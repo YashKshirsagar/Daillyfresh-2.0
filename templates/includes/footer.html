@@ -1,0 +1,160 @@
+{% load static %}
+
+<footer
+  id="contact"
+  class="bg-[#0a2f15] text-white pt-16 pb-8 relative overflow-hidden"
+>
+  <div
+    class="absolute inset-0 opacity-5 bg-[url('{% static 'images/farm-pattern.png' %}')] bg-repeat pointer-events-none"
+  ></div>
+
+  <div class="container mx-auto px-6 relative z-10">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+      <div class="space-y-6">
+        <img
+          src="{% static 'images/logo.png' %}"
+          alt="Daillyfresh"
+          class="h-16 w-auto object-contain mb-4 bg-white/10 p-2 rounded-lg backdrop-blur-sm"
+        />
+        <p class="text-green-100/80 leading-relaxed">
+          Delivering 100% pure, fresh, and hygienic dairy & daily needs directly
+          from trusted farmers to your doorstep. Purity you can trust.
+        </p>
+        <div class="flex gap-4 pt-2">
+          <a
+            href="#"
+            class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+          >
+            <i class="ri-facebook-fill text-xl group-hover:text-white"></i>
+          </a>
+          <a
+            href="#"
+            class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+          >
+            <i class="ri-instagram-line text-xl group-hover:text-white"></i>
+          </a>
+          <a
+            href="#"
+            class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+          >
+            <i class="ri-whatsapp-line text-xl group-hover:text-white"></i>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <h4 class="text-xl font-bold mb-6 text-white">Quick Links</h4>
+        <ul class="space-y-3">
+          <li>
+            <a
+              href="#home"
+              class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+              ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> Home</a
+            >
+          </li>
+          <li>
+            <a
+              href="#about"
+              class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+              ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> About Us</a
+            >
+          </li>
+          <li>
+            <a
+              href="#process"
+              class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+              ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> Our
+              Process</a
+            >
+          </li>
+          <li>
+            <a
+              href="#products"
+              class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+              ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> Products</a
+            >
+          </li>
+          <li>
+            <a
+              href="#testimonials"
+              class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+              ><i class="ri-arrow-right-s-line text-[#16a34a]"></i>
+              Testimonials</a
+            >
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-xl font-bold mb-6 text-white">Contact Us</h4>
+        <ul class="space-y-4">
+          <li class="flex items-start gap-3 text-green-100/80">
+            <i class="ri-phone-fill text-[#16a34a] text-xl mt-1"></i>
+            <div>
+              <p class="font-bold text-white">Call Us</p>
+              <a
+                href="tel:+918149415113"
+                class="hover:text-[#84cc16] transition-colors"
+                >+91-8149415113</a
+              >
+            </div>
+          </li>
+          <li class="flex items-start gap-3 text-green-100/80">
+            <i class="ri-mail-fill text-[#16a34a] text-xl mt-1"></i>
+            <div>
+              <p class="font-bold text-white">Email Us</p>
+              <a
+                href="mailto:support@daillyfresh.com"
+                class="hover:text-[#84cc16] transition-colors"
+                >support@daillyfresh.com</a
+              >
+            </div>
+          </li>
+          <li class="flex items-start gap-3 text-green-100/80">
+            <i class="ri-map-pin-fill text-[#16a34a] text-xl mt-1"></i>
+            <div>
+              <p class="font-bold text-white">Location</p>
+              <p>Nagpur, Maharashtra, India</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-xl font-bold mb-6 text-white">Newsletter</h4>
+        <p class="text-green-100/80 mb-4">
+          Subscribe to get updates on fresh products and offers.
+        </p>
+        <form class="flex flex-col gap-3">
+          <input
+            type="email"
+            placeholder="Your email address"
+            class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-[#16a34a] focus:border-transparent text-white placeholder-green-100/50 outline-none transition-all"
+          />
+          <button
+            class="bg-[#16a34a] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#84cc16] transition-colors shadow-lg shadow-green-900/20"
+          >
+            Subscribe Now
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div
+      class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-green-100/60"
+    >
+      <p>
+        &copy; 2025 Daillyfresh. All Rights Reserved. Crafted with ❤️ for
+        purity.
+      </p>
+      <div class="flex gap-6 mt-4 md:mt-0 font-medium">
+        <a href="#" class="hover:text-[#84cc16] transition-colors"
+          >Terms & Conditions</a
+        >
+        <a href="#" class="hover:text-[#84cc16] transition-colors"
+          >Privacy Policy</a
+        >
+      </div>
+    </div>
+  </div>
+</footer>

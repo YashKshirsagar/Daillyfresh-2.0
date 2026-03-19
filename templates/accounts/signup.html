@@ -1,0 +1,117 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Sign Up |
+Daillyfresh{% endblock %} {% block content %}
+<style>
+  /* Clean form styling */
+  .django-form label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+  }
+  .django-form input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .django-form input:focus {
+    border-color: transparent;
+    box-shadow: 0 0 0 2px #16a34a;
+  }
+</style>
+
+<section
+  class="min-h-screen flex items-center justify-center bg-[#f3f4f6] pt-32 pb-20 px-4"
+>
+  <div
+    class="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden animate-fade-in-up"
+  >
+    <div class="bg-[#0a2f15] p-6 text-center">
+      <h2 class="text-3xl font-display font-bold text-white">Create Account</h2>
+      <p class="text-green-100/80 mt-2">
+        Join Daillyfresh for pure & fresh products
+      </p>
+    </div>
+
+    <div class="p-8">
+      <form method="POST" class="space-y-4" x-data="{ password: '' }">
+        {% csrf_token %}
+
+        <div
+          class="django-form space-y-4"
+          @input="password = document.getElementById('id_password1') ? document.getElementById('id_password1').value : ''"
+        >
+          {% for field in form %}
+          <div>
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }} {% if field.errors %}
+            <ul class="text-red-600 text-xs mt-1">
+              {% for error in field.errors %}
+              <li>* {{ error }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 mt-4">
+          <p
+            class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3"
+          >
+            Password Requirements:
+          </p>
+          <ul class="text-sm space-y-2">
+            <li
+              class="flex items-center gap-2 transition-colors duration-300"
+              :class="password.length >= 8 ? 'text-green-600 font-medium' : 'text-gray-500'"
+            >
+              <i
+                :class="password.length >= 8 ? 'ri-checkbox-circle-fill' : 'ri-checkbox-blank-circle-line'"
+              ></i>
+              At least 8 characters
+            </li>
+            <li
+              class="flex items-center gap-2 transition-colors duration-300"
+              :class="(password.match(/[A-Za-z]/) && password.match(/[0-9]/)) ? 'text-green-600 font-medium' : 'text-gray-500'"
+            >
+              <i
+                :class="(password.match(/[A-Za-z]/) && password.match(/[0-9]/)) ? 'ri-checkbox-circle-fill' : 'ri-checkbox-blank-circle-line'"
+              ></i>
+              Contains letters & numbers
+            </li>
+            <li
+              class="flex items-center gap-2 transition-colors duration-300"
+              :class="(password.length > 0 && !password.match(/^[0-9]+$/)) ? 'text-green-600 font-medium' : 'text-gray-500'"
+            >
+              <i
+                :class="(password.length > 0 && !password.match(/^[0-9]+$/)) ? 'ri-checkbox-circle-fill' : 'ri-checkbox-blank-circle-line'"
+              ></i>
+              Cannot be entirely numeric
+            </li>
+          </ul>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-[#16a34a] text-white py-3 rounded-xl font-bold hover:bg-[#0a2f15] transition-colors shadow-lg transform hover:-translate-y-0.5 mt-6"
+        >
+          Sign Up
+        </button>
+      </form>
+
+      <p class="text-center mt-6 text-gray-600">
+        Already have an account?
+        <a
+          href="{% url 'login' %}"
+          class="text-[#16a34a] font-bold hover:underline"
+          >Log in here</a
+        >
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

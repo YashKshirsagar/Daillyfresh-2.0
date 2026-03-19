@@ -1,0 +1,941 @@
+{% load static tailwind_tags %}
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}Daillyfresh | Farm Fresh Goodness{% endblock %}
+    </title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    {% tailwind_css %}
+
+    <style>
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #16a34a;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #15803d;
+      }
+
+      /* ── Responsive Nav Visibility ── */
+      .nav-desktop {
+        display: none !important;
+      }
+      .nav-desktop-block {
+        display: none !important;
+      }
+      .nav-hamburger {
+        display: flex !important;
+      }
+
+      @media (min-width: 1024px) {
+        .nav-desktop {
+          display: flex !important;
+        }
+        .nav-desktop-block {
+          display: block !important;
+        }
+        .nav-hamburger {
+          display: none !important;
+        }
+        .nav-mobile-dropdown {
+          display: none !important;
+        }
+      }
+
+      /* ── Classic Full-Width Header ── */
+      .site-header {
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(22, 163, 74, 0.12);
+        box-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
+        {% comment %} transition:
+          background 0.3s,
+          box-shadow 0.3s,
+          border-color 0.3s; {% endcomment %}
+      }
+
+      /* Transparent mode on home hero */
+      {% comment %} .header-transparent .site-header {
+        background: rgba(0, 0, 0, 0.18);
+        border-bottom-color: rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+      } {% endcomment %}
+
+      .header-inner {
+        width: 100%;
+        padding: 0 1.5rem;
+        {% comment %} height: 68px; {% endcomment %}
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 2rem;
+      }
+
+      .header-logo {
+        flex-shrink: 0;
+      }
+
+      .header-nav-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
+
+      /* Nav link underline animation */
+      .nav-link {
+        position: relative;
+        font-weight: 600;
+        font-size: 0.88rem;
+        letter-spacing: 0.01em;
+        color: #1a3326;
+        text-decoration: none;
+        padding: 0.35rem 0.75rem;
+        transition: color 0.2s;
+      }
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        right: 50%;
+        height: 2px;
+        background: #16a34a;
+        border-radius: 2px;
+        transition:
+          left 0.22s ease,
+          right 0.22s ease;
+      }
+      .nav-link:hover {
+        color: #16a34a;
+      }
+      .nav-link:hover::after {
+        left: 0.75rem;
+        right: 0.75rem;
+      }
+
+      .nav-link-white {
+        color: rgba(255, 255, 255, 0.92);
+      }
+      .nav-link-white:hover {
+        color: #fff;
+      }
+      .nav-link-white::after {
+        background: #fff;
+      }
+
+      /* Cart badge */
+      .cart-badge {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        background: #16a34a;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        min-width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #fff;
+        line-height: 1;
+        box-shadow: 0 2px 6px rgba(22, 163, 74, 0.4);
+      }
+
+      /* Icon button (cart, user) */
+      .icon-btn {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #1a3326;
+        background: #f0fdf4;
+        border: 1.5px solid #d1fae5;
+        transition:
+          background 0.2s,
+          transform 0.2s,
+          color 0.2s;
+        text-decoration: none;
+        flex-shrink: 0;
+      }
+      .icon-btn:hover {
+        background: #dcfce7;
+        color: #16a34a;
+        transform: scale(1.08);
+      }
+      .icon-btn-white {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #fff;
+      }
+      .icon-btn-white:hover {
+        background: rgba(255, 255, 255, 0.25);
+        color: #fff;
+      }
+
+      /* Avatar */
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #16a34a, #0a2f15);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #d1fae5;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
+        flex-shrink: 0;
+      }
+      .avatar:hover {
+        transform: scale(1.08);
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+      }
+
+      /* Profile Dropdown */
+      .profile-dropdown {
+        position: absolute;
+        top: calc(100% + 12px);
+        right: 0;
+        width: 220px;
+        background: #fff;
+        border: 1px solid #e8f5e9;
+        border-radius: 1.25rem;
+        box-shadow:
+          0 12px 40px rgba(0, 0, 0, 0.12),
+          0 2px 8px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        transform-origin: top right;
+      }
+      .dropdown-header {
+        padding: 1rem 1.1rem 0.75rem;
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-bottom: 1px solid #d1fae5;
+      }
+      .dropdown-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #6b7280;
+        margin-bottom: 2px;
+      }
+      .dropdown-username {
+        font-weight: 800;
+        color: #0a2f15;
+        font-size: 0.95rem;
+      }
+      .dropdown-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0.65rem 1.1rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #374151;
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .dropdown-link i {
+        font-size: 1rem;
+        color: #9ca3af;
+        transition: color 0.15s;
+      }
+      .dropdown-link:hover {
+        background: #f0fdf4;
+        color: #16a34a;
+      }
+      .dropdown-link:hover i {
+        color: #16a34a;
+      }
+      .dropdown-link.logout {
+        color: #ef4444;
+        border-top: 1px solid #fef2f2;
+      }
+      .dropdown-link.logout i {
+        color: #f87171;
+      }
+      .dropdown-link.logout:hover {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+
+      /* Mobile menu */
+      .mobile-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border-top: 1px solid #e8f5e9;
+        border-bottom: 1px solid #e8f5e9;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        padding: 0.75rem 1rem;
+        z-index: 49;
+      }
+      .mobile-link {
+        display: flex;
+        align-items: center;
+        padding: 0.65rem 0.9rem;
+        border-radius: 0.75rem;
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: #1a3326;
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .mobile-link:hover {
+        background: #f0fdf4;
+        color: #16a34a;
+      }
+      .mobile-divider {
+        border: none;
+        border-top: 1px solid #f0f0f0;
+        margin: 0.5rem 0;
+      }
+      .mobile-user-card {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0.9rem;
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-radius: 0.9rem;
+        margin-bottom: 0.5rem;
+      }
+    </style>
+  </head>
+
+  <body
+    class="bg-white font-sans text-gray-800 antialiased flex flex-col min-h-screen"
+  >
+    <!-- ══ HEADER ══ -->
+    <header
+      x-data="{ mobileMenuOpen: false}"
+      class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+    >
+      <div class="site-header w-full">
+        <div class="header-inner">
+          <!-- Logo -->
+          <a href="/" class="header-logo flex items-center">
+            <img
+              src="{% static 'images/logo.png' %}"
+              alt="Daillyfresh Logo"
+              class="h-12 w-auto object-contain"
+            />
+            <span class="text-xl font-semibold ml-2">Daillyfresh</span>
+          </a>
+
+          <!-- Navigation and Actions Wrapper -->
+          <div class="header-nav-wrapper">
+            <!-- Desktop Nav -->
+            <nav class="nav-desktop items-center gap-1">
+              <a
+                href="/#home"
+                class="nav-link"
+                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
+                >Home</a
+              >
+              <a
+                href="/#about"
+                class="nav-link"
+                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
+                >About Us</a
+              >
+              <a
+                href="/#process"
+                class="nav-link"
+                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
+                >Our Process</a
+              >
+              <a
+                href="/#products"
+                class="nav-link"
+                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
+                >Products</a
+              >
+              <a
+                href="#contact"
+                class="nav-link"
+                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
+                >Contact</a
+              >
+            </nav>
+          </div>
+
+          <!-- Right Side Actions -->
+          <div class="header-actions">
+            <!-- Cart -->
+            <a
+              href="{% url 'cart_page' %}"
+              class="icon-btn"
+              :class="(!scrolled && isHome) ? 'icon-btn-white' : ''"
+            >
+              <i class="ri-shopping-cart-2-line"></i>
+              <span
+                x-data
+                x-show="$store.cart.count > 0"
+                x-text="$store.cart.count"
+                class="cart-badge"
+                style="display: none"
+              ></span>
+            </a>
+
+            {% if user.is_authenticated %}
+            <!-- Profile Dropdown (Desktop) -->
+            <div
+              class="nav-desktop-block relative"
+              x-data="{ profileOpen: false }"
+            >
+              <div
+                class="avatar"
+                @click="profileOpen = !profileOpen"
+                @click.away="profileOpen = false"
+              >
+                {{ user.username|make_list|first|upper }}
+              </div>
+              <div
+                x-show="profileOpen"
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-95"
+                class="profile-dropdown"
+                style="display: none"
+              >
+                <div class="dropdown-header">
+                  <p class="dropdown-label">Signed in as</p>
+                  <p class="dropdown-username">{{ user.username }}</p>
+                </div>
+                <a href="#" class="dropdown-link"
+                  ><i class="ri-user-line"></i> My Profile</a
+                >
+                <a href="#" class="dropdown-link"
+                  ><i class="ri-shopping-bag-line"></i> My Orders</a
+                >
+                <a href="{% url 'logout' %}" class="dropdown-link logout"
+                  ><i class="ri-logout-box-r-line"></i> Logout</a
+                >
+              </div>
+            </div>
+
+            {% else %}
+            <!-- User icon for unauthenticated (Desktop) -->
+            <a
+              href="{% url 'login' %}"
+              class="nav-desktop icon-btn"
+              :class="(!scrolled && isHome) ? 'icon-btn-white' : ''"
+              title="Login / Sign Up"
+            >
+              <i class="ri-user-line"></i>
+            </a>
+            {% endif %}
+
+            <!-- Hamburger (Mobile only) -->
+            <button
+              @click="mobileMenuOpen = !mobileMenuOpen"
+              class="nav-hamburger w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+              :class="(!scrolled && isHome) ? 'text-white hover:bg-white/15' : 'text-[#0a2f15] hover:bg-gray-100'"
+            >
+              <i
+                :class="mobileMenuOpen ? 'ri-close-line text-xl' : 'ri-menu-3-line text-xl'"
+              ></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Dropdown -->
+      <div
+        x-show="mobileMenuOpen"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 -translate-y-2"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 -translate-y-2"
+        @click.away="mobileMenuOpen = false"
+        class="nav-mobile-dropdown mobile-menu"
+        style="display: none"
+      >
+        {% if user.is_authenticated %}
+        <div class="mobile-user-card">
+          <div
+            class="avatar"
+            style="width: 40px; height: 40px; font-size: 1.1rem"
+          >
+            {{ user.username|make_list|first|upper }}
+          </div>
+          <div>
+            <p
+              style="
+                font-size: 0.72rem;
+                color: #6b7280;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+              "
+            >
+              Logged in as
+            </p>
+            <p style="font-weight: 800; color: #0a2f15; font-size: 0.92rem">
+              {{ user.username }}
+            </p>
+          </div>
+        </div>
+        {% endif %}
+
+        <a href="/#home" @click="mobileMenuOpen=false" class="mobile-link">
+          <i
+            class="ri-home-5-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Home
+        </a>
+        <a href="/#about" @click="mobileMenuOpen=false" class="mobile-link">
+          <i
+            class="ri-team-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >About Us
+        </a>
+        <a href="/#process" @click="mobileMenuOpen=false" class="mobile-link">
+          <i
+            class="ri-settings-3-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Our Process
+        </a>
+        <a href="/#products" @click="mobileMenuOpen=false" class="mobile-link">
+          <i
+            class="ri-store-2-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Products
+        </a>
+        <a href="#contact" @click="mobileMenuOpen=false" class="mobile-link">
+          <i
+            class="ri-mail-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Contact
+        </a>
+
+        <hr class="mobile-divider" />
+
+        {% if user.is_authenticated %}
+        <a href="#" class="mobile-link">
+          <i
+            class="ri-user-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >My Profile
+        </a>
+        <a href="#" class="mobile-link">
+          <i
+            class="ri-shopping-bag-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >My Orders
+        </a>
+        <a href="{% url 'logout' %}" class="mobile-link" style="color: #ef4444">
+          <i
+            class="ri-logout-box-r-line"
+            style="color: #ef4444; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Logout
+        </a>
+        {% else %}
+        <a
+          href="{% url 'login' %}"
+          @click="mobileMenuOpen=false"
+          class="mobile-link"
+        >
+          <i
+            class="ri-login-box-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Login
+        </a>
+        <a
+          href="{% url 'signup' %}"
+          @click="mobileMenuOpen=false"
+          class="mobile-link"
+        >
+          <i
+            class="ri-user-add-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Sign Up
+        </a>
+        {% endif %}
+      </div>
+    </header>
+    <!-- ══ END HEADER ══ -->
+
+    {% if messages %}
+    <div class="fixed top-24 right-4 z-[999] flex flex-col gap-3">
+      {% for message in messages %}
+      <div
+        x-data="{ show: true }"
+        x-show="show"
+        x-init="setTimeout(() => show = false, 5000)"
+        x-transition:leave="transition ease-in duration-300"
+        x-transition:leave-start="opacity-100 translate-x-0"
+        x-transition:leave-end="opacity-0 translate-x-8"
+        class="px-5 py-4 rounded-xl shadow-2xl font-medium flex items-center gap-3 border-l-4 bg-white min-w-[300px] {% if message.tags == 'error' %} border-red-500 {% elif message.tags == 'success' %} border-green-500 {% else %} border-blue-500 {% endif %}"
+      >
+        {% if message.tags == 'success' %}
+        <i class="ri-checkbox-circle-fill text-2xl text-green-500"></i>
+        {% elif message.tags == 'error' %}
+        <i class="ri-error-warning-fill text-2xl text-red-500"></i>
+        {% else %}
+        <i class="ri-information-fill text-2xl text-blue-500"></i>
+        {% endif %}
+
+        <span class="text-sm text-gray-800 flex-grow">{{ message }}</span>
+
+        <button
+          @click="show = false"
+          class="ml-2 text-gray-400 hover:text-gray-800 transition-colors focus:outline-none"
+        >
+          <i class="ri-close-line text-xl"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <main class="flex-grow">{% block content %}{% endblock %}</main>
+
+    <!-- Promotional Banner -->
+    <section class="w-full">
+      <img
+        src="https://res.cloudinary.com/do0uglmwm/image/upload/v1773828980/Footer_Banner_uyira6.jpg"
+        alt="Promotional Banner"
+        class="w-full h-auto object-cover"
+      />
+    </section>
+
+    <footer
+      id="contact"
+      class="bg-[#0a2f15] text-white pt-16 pb-8 relative overflow-hidden"
+    >
+      <div
+        class="absolute inset-0 opacity-5 bg-[url('{% static 'images/farm-pattern.png' %}')] bg-repeat pointer-events-none"
+      ></div>
+      <div class="container mx-auto px-6 relative z-10">
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12"
+        >
+          <div class="space-y-6">
+            <img
+              src="{% static 'images/logo.png' %}"
+              alt="Daillyfresh"
+              class="h-16 w-auto object-contain mb-4 bg-white/10 p-2 rounded-lg backdrop-blur-sm"
+            />
+            <p class="text-green-100/80 leading-relaxed">
+              Delivering 100% pure, fresh, and hygienic dairy & daily needs
+              directly from trusted farmers to your doorstep.
+            </p>
+            <div class="flex gap-4 pt-2">
+              <a
+                href="#"
+                class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+              >
+                <i class="ri-facebook-fill text-xl group-hover:text-white"></i>
+              </a>
+              <a
+                href="#"
+                class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+              >
+                <i class="ri-instagram-line text-xl group-hover:text-white"></i>
+              </a>
+              <a
+                href="#"
+                class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+              >
+                <i class="ri-whatsapp-line text-xl group-hover:text-white"></i>
+              </a>
+              <a
+                href="#"
+                class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+              >
+                <i class="ri-linkedin-fill text-xl group-hover:text-white"></i>
+              </a>
+              <a
+                href="#"
+                class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#16a34a] transition-all group"
+              >
+                <i class="ri-youtube-fill text-xl group-hover:text-white"></i>
+              </a>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-xl font-bold mb-6 text-white">Quick Links</h4>
+            <ul class="space-y-3">
+              <li>
+                <a
+                  href="/#home"
+                  class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+                  ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> Home</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/#about"
+                  class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+                  ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> About
+                  Us</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/#process"
+                  class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+                  ><i class="ri-arrow-right-s-line text-[#16a34a]"></i> Our
+                  Process</a
+                >
+              </li>
+              <li>
+                <a
+                  href="/#products"
+                  class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+                  ><i class="ri-arrow-right-s-line text-[#16a34a]"></i>
+                  Products</a
+                >
+              </li>
+              <li>
+                <a
+                  href="#contact"
+                  class="text-green-100/80 hover:text-[#84cc16] transition-colors flex items-center gap-2"
+                  ><i class="ri-arrow-right-s-line text-[#16a34a]"></i>
+                  Contact</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-xl font-bold mb-6 text-white">Contact Us</h4>
+            <ul class="space-y-4">
+              <li class="flex items-start gap-3 text-green-100/80">
+                <i class="ri-phone-fill text-[#16a34a] text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold text-white">Call Us</p>
+                  <a
+                    href="tel:+918149415113"
+                    class="hover:text-[#84cc16] transition-colors"
+                    >+91-8149415113</a
+                  >
+                </div>
+              </li>
+              <li class="flex items-start gap-3 text-green-100/80">
+                <i class="ri-mail-fill text-[#16a34a] text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold text-white">Email Us</p>
+                  <a
+                    href="mailto:support@daillyfresh.com"
+                    class="hover:text-[#84cc16] transition-colors"
+                    >support@daillyfresh.com</a
+                  >
+                </div>
+              </li>
+              <li class="flex items-start gap-3 text-green-100/80">
+                <i class="ri-map-pin-fill text-[#16a34a] text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold text-white">Location</p>
+                  <p>Nagpur, Maharashtra, India</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-xl font-bold mb-6 text-white">Quick Feedback</h4>
+            <p class="text-green-100/80 mb-4">
+              Share your thoughts with us!
+            </p>
+            <form class="flex flex-col gap-3">
+              <input
+                placeholder="Your thoughts"
+                class="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-[#16a34a] focus:border-transparent text-white placeholder-green-100/50 outline-none transition-all"
+              />
+              <button
+                class="bg-[#16a34a] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#84cc16] transition-colors shadow-lg shadow-green-900/20"
+              >
+                Submit Feedback
+              </button>
+            </form>
+          </div>
+        </div>
+        <div
+          class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-green-100/60"
+        >
+          <p>&copy; 2025 Daillyfresh. All Rights Reserved.</p>
+          <div class="flex gap-6 mt-4 md:mt-0 font-medium">
+            <a href="#" class="hover:text-[#84cc16] transition-colors"
+              >Privacy Policy</a
+            >
+            <a href="#" class="hover:text-[#84cc16] transition-colors"
+              >Terms & Conditions</a
+            >
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <a
+      href="https://wa.me/918149415113"
+      target="_blank"
+      class="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-300 animate-bounce"
+    >
+      <i class="ri-whatsapp-line text-3xl"></i>
+    </a>
+
+    <script>
+      document.addEventListener("alpine:init", () => {
+        Alpine.store("cart", {
+          items: JSON.parse(localStorage.getItem("daillyfresh_cart") || "[]"),
+          add(product) {
+            const existingItem = this.items.find(
+              (item) => item.id === product.id,
+            );
+            if (existingItem) {
+              existingItem.quantity += 1;
+            } else {
+              this.items.push({ ...product, quantity: 1 });
+            }
+            this.save();
+            this.showNotification(product.name + " added to cart!", "success");
+          },
+          remove(productId) {
+            this.items = this.items.filter((item) => item.id !== productId);
+            this.save();
+          },
+          updateQuantity(productId, change) {
+            const item = this.items.find((item) => item.id === productId);
+            if (item) {
+              item.quantity += change;
+              if (item.quantity <= 0) {
+                this.remove(productId);
+              } else {
+                this.save();
+              }
+            }
+          },
+          clear() {
+            this.items = [];
+            this.save();
+          },
+          save() {
+            localStorage.setItem(
+              "daillyfresh_cart",
+              JSON.stringify(this.items),
+            );
+          },
+          get count() {
+            return this.items.reduce((total, item) => total + item.quantity, 0);
+          },
+          get subtotal() {
+            return this.items.reduce(
+              (total, item) => total + parseFloat(item.price) * item.quantity,
+              0,
+            );
+          },
+          showNotification(message, type = "success") {
+            // Create notification element
+            const notification = document.createElement("div");
+            notification.className = "fixed top-24 right-4 z-[999] px-5 py-4 rounded-xl shadow-2xl font-medium flex items-center gap-3 border-l-4 bg-white min-w-[320px] transform translate-x-full transition-all duration-300";
+
+            // Set colors based on type
+            if (type === "success") {
+              notification.classList.add("border-green-500");
+              notification.innerHTML = `
+                <i class="ri-checkbox-circle-fill text-2xl text-green-500"></i>
+                <span class="text-sm text-gray-800 flex-grow">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 text-gray-400 hover:text-gray-800 transition-colors focus:outline-none">
+                  <i class="ri-close-line text-xl"></i>
+                </button>
+              `;
+            } else if (type === "error") {
+              notification.classList.add("border-red-500");
+              notification.innerHTML = `
+                <i class="ri-error-warning-fill text-2xl text-red-500"></i>
+                <span class="text-sm text-gray-800 flex-grow">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 text-gray-400 hover:text-gray-800 transition-colors focus:outline-none">
+                  <i class="ri-close-line text-xl"></i>
+                </button>
+              `;
+            }
+
+            // Add to page
+            document.body.appendChild(notification);
+
+            // Animate in
+            setTimeout(() => {
+              notification.classList.remove("translate-x-full");
+            }, 10);
+
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+              notification.classList.add("translate-x-full", "opacity-0");
+              setTimeout(() => {
+                if (notification.parentElement) {
+                  notification.remove();
+                }
+              }, 300);
+            }, 4000);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

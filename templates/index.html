@@ -1,0 +1,524 @@
+{% extends 'base.html' %} {% load static %} {% block content %}
+
+<section
+  id="home"
+  class="relative w-full h-[65vh] md:h-[75vh] lg:h-screen overflow-hidden"
+  x-data="{
+    activeSlide: {{ slides.0.id }},
+    slides: [
+      {% for slide in slides %}
+      {
+        id: {{ slide.id }},
+        title: '{{ slide.title|escapejs }}',
+        subtitle: '{{ slide.subtitle|escapejs }}',
+        image: '{{ slide.image.url }}',
+        showButton: {{ slide.show_button|yesno:"true,false" }}
+      },
+      {% endfor %}
+    ],
+    startSlider() {
+      setInterval(() => {
+        let index = this.slides.findIndex(
+          s => s.id === this.activeSlide
+        )
+        this.activeSlide =
+          this.slides[(index + 1) % this.slides.length].id
+      }, 4000)
+    }
+  }"
+  x-init="startSlider()"
+>
+  <template x-for="slide in slides" :key="slide.id">
+    <div
+      x-show="activeSlide === slide.id"
+      x-transition:enter="transition transform duration-1000 ease-in-out"
+      x-transition:enter-start="opacity-0 scale-105"
+      x-transition:enter-end="opacity-100 scale-100"
+      x-transition:leave="transition transform duration-1000 ease-in-out"
+      x-transition:leave-start="opacity-100 scale-100"
+      x-transition:leave-end="opacity-0 scale-100"
+      class="absolute inset-0 w-full h-full bg-cover bg-[center_top] md:bg-center"
+      :style="`background-image: url('${slide.image}');`"
+    >
+      {% comment %} <div
+        class="absolute inset-0 bg-black/40 bg-gradient-to-r from-black/70 to-transparent"
+      ></div> {% endcomment %}
+      <div
+        class="absolute inset-0"
+      ></div>
+
+      <div class="absolute inset-0 flex items-center">
+        <div class="container mx-auto px-6 md:px-12">
+          <div class="max-w-2xl text-white space-y-6 animate-fade-in-up">
+            <h1
+              class="text-4xl md:text-6xl font-display font-extrabold leading-tight shadow-sm"
+              x-text="slide.title"
+            ></h1>
+            <p
+              class="text-lg md:text-2xl text-green-50 font-medium"
+              x-text="slide.subtitle"
+            ></p>
+
+            <div x-show="slide.showButton" class="pt-4">
+              <a
+                href="#products"
+                class="px-8 py-4 bg-[#16a34a] text-white rounded-full font-bold shadow-lg hover:bg-[#84cc16] transition-all transform hover:-translate-y-1 inline-flex items-center gap-2"
+              >
+                Order Now <i class="ri-arrow-right-line"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <div
+    class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-20"
+  >
+    <template x-for="slide in slides" :key="slide.id">
+      <button
+        @click="activeSlide = slide.id"
+        class="w-3 h-3 rounded-full transition-all duration-300"
+        :class="activeSlide === slide.id ? 'bg-[#16a34a] w-8' : 'bg-white/50 hover:bg-white'"
+      ></button>
+    </template>
+  </div>
+</section>
+
+<section id="about" class="py-20 bg-[#f3f4f6]">
+  <div class="container mx-auto px-6">
+    <div class="flex flex-col md:flex-row items-center gap-16">
+      <div class="w-full md:w-1/2 relative animate-fade-in-up">
+        <div
+          class="absolute inset-0 bg-[#84cc16]/20 rounded-3xl transform translate-x-4 translate-y-4"
+        ></div>
+        <img
+          src="https://res.cloudinary.com/do0uglmwm/image/upload/v1773480393/About_us_image_hkx4my.jpg"
+          alt="Daillyfresh Farmer"
+          class="rounded-3xl shadow-xl relative z-10 w-full object-cover h-[400px] md:h-[500px]"
+        />
+      </div>
+
+      <div class="w-full md:w-1/2 space-y-6 animate-fade-in-up delay-200">
+        <div>
+          <span class="text-[#16a34a] font-bold uppercase tracking-wider"
+            >Our Story</span
+          >
+          <h2
+            class="text-3xl md:text-5xl font-display font-bold text-[#0a2f15] mt-2"
+          >
+            Purity You Can Trust
+          </h2>
+        </div>
+
+        <p class="text-gray-600 text-lg leading-relaxed">
+          Daillyfresh was born with a simple yet powerful mission — to deliver
+          <span class="font-bold text-[#16a34a]"
+            >100% pure, fresh, and hygienic</span
+          >
+          dairy & daily needs products directly from trusted farmers to your
+          doorstep.
+        </p>
+
+        <p class="text-gray-600 text-lg leading-relaxed">
+          In a world where true purity in food is becoming rare, we work
+          tirelessly every day to ensure your family enjoys milk and dairy
+          products that are
+          <span class="font-bold text-[#0a2f15]"
+            >safe, natural, and unadulterated</span
+          >. We believe that caring for your health and your family’s well-being
+          is one of the most valuable investments you can make.
+        </p>
+
+        <p class="text-gray-600 text-lg leading-relaxed">
+          With Daillyfresh, every drop reflects wellness, quality, and trust — a
+          small choice today for a healthier tomorrow.
+        </p>
+
+        <p
+          class="text-xl font-display font-bold text-[#0a2f15] pt-2 border-t border-gray-200 mt-4"
+        >
+          Say goodbye to compromises. Choose purity. Choose health. <br />
+          <span class="text-[#16a34a] text-2xl">Choose Daillyfresh.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="process" class="py-24 bg-white">
+  <div class="container mx-auto px-6 text-center">
+    <div class="mb-20 animate-fade-in-up">
+      <span class="text-[#16a34a] font-bold uppercase tracking-wider"
+        >How It Works</span
+      >
+      <h2
+        class="text-3xl md:text-5xl font-display font-bold text-[#0a2f15] mt-2"
+      >
+        Farm-Fresh Milk, Delivered Daily
+      </h2>
+    </div>
+
+    <div
+      class="relative flex flex-col md:flex-row justify-between items-center max-w-6xl mx-auto gap-12 md:gap-0"
+    >
+      <div
+        class="flex flex-col items-center relative z-10 group animate-fade-in-up w-full md:w-1/3"
+      >
+        <div
+          class="w-40 h-40 flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+        >
+          <img
+            src="{% static 'images/process-farm.png' %}"
+            alt="Sourced from Healthy Cattle"
+            class="w-full h-full object-contain drop-shadow-lg"
+          />
+        </div>
+        <h3 class="text-xl font-bold text-[#0a2f15]">Sourced from Healthy,</h3>
+        <h3 class="text-xl font-bold text-[#0a2f15]">Well-Cared Cattle</h3>
+      </div>
+
+      <div
+        class="hidden md:block flex-grow h-16 relative -mx-8 self-center mb-16"
+      >
+        <svg
+          class="w-full h-full"
+          viewBox="0 0 200 60"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M5,30 Q100,5 195,30"
+            fill="none"
+            stroke="#84cc16"
+            stroke-width="3"
+            stroke-dasharray="10,10"
+            class="dashed-arrow-animate"
+            marker-end="url(#arrowhead)"
+          />
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="7"
+              refX="9"
+              refY="3.5"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" fill="#84cc16" />
+            </marker>
+          </defs>
+        </svg>
+      </div>
+
+      <div
+        class="flex flex-col items-center relative z-10 group animate-fade-in-up delay-200 w-full md:w-1/3"
+      >
+        <div
+          class="w-40 h-40 flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+        >
+          <img
+            src="{% static 'images/process-lab.png' %}"
+            alt="Rigorous Quality Checks"
+            class="w-full h-full object-contain drop-shadow-lg"
+          />
+        </div>
+        <h3 class="text-xl font-bold text-[#0a2f15]">
+          Rigorous Quality Checks,
+        </h3>
+        <h3 class="text-xl font-bold text-[#0a2f15]">Every Batch</h3>
+      </div>
+
+      <div
+        class="hidden md:block flex-grow h-16 relative -mx-8 self-center mb-16"
+      >
+        <svg
+          class="w-full h-full"
+          viewBox="0 0 200 60"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M5,30 Q100,60 195,30"
+            fill="none"
+            stroke="#84cc16"
+            stroke-width="3"
+            stroke-dasharray="10,10"
+            class="dashed-arrow-animate"
+            marker-end="url(#arrowhead)"
+          />
+        </svg>
+      </div>
+
+      <div
+        class="flex flex-col items-center relative z-10 group animate-fade-in-up delay-400 w-full md:w-1/3"
+      >
+        <div
+          class="w-40 h-40 flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110"
+        >
+          <img
+            src="{% static 'images/process-delivery.png' %}"
+            alt="Delivered Fresh"
+            class="w-full h-full object-contain drop-shadow-lg"
+          />
+        </div>
+        <h3 class="text-xl font-bold text-[#0a2f15]">
+          Delivered Fresh to Your
+        </h3>
+        <h3 class="text-xl font-bold text-[#0a2f15]">Doorstep Daily</h3>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="products" class="py-24 bg-[#f8f9fa]" x-data="{
+    openModal: false,
+    selectedProduct: {},
+    products: [
+        {% for product in products %}
+        {
+            id: {{ product.id }},
+            name: '{{ product.name|escapejs }}',
+            description: '{{ product.description|escapejs }}',
+            price: '₹{{ product.price }}',
+            unit: '{{ product.unit }}',
+            image: '{{ product.image.url }}',
+            rating: {{ product.rating }},
+            reviews: {{ product.reviews_count }},
+            badge: '{{ product.badge|default:""|escapejs }}',
+            badge_color: '{{ product.badge_color|default:""|escapejs }}',
+            badge_text_color: '{{ product.badge_text_color|default:""|escapejs }}'
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+}">
+    <div class="container mx-auto px-6">
+        <div class="text-center mb-16 animate-fade-in-up">
+            <span class="text-[#16a34a] font-bold uppercase tracking-wider text-sm">Our Offerings</span>
+            <h2 class="text-3xl md:text-5xl font-display font-bold text-[#0a2f15] mt-2">Products We Serve You</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <template x-for="product in products" :key="product.id">
+                <div class="bg-white rounded-3xl p-4 shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-200 flex flex-col relative text-left">
+                    
+                    {% comment %} <div x-show="product.badge" style="display: none;" class="absolute top-6 right-6 bg-[#FFC107] text-[#0a2f15] text-xs font-bold px-3 py-1 rounded-full z-10" x-text="product.badge"></div> {% endcomment %}
+                    <div 
+                        x-show="product.badge" 
+                        style="display: none;"
+                        :style="`background-color: ${product.badge_color || '#FFC107'}; color: ${product.badge_text_color || '#0a2f15'}`"
+                        class="absolute top-6 right-6 text-xs font-bold px-3 py-1 rounded-full z-10" 
+                        x-text="product.badge"
+                    ></div>
+
+                    <div class="w-full h-56 md:h-64 rounded-2xl overflow-hidden mb-4 flex items-center justify-center relative bg-white">
+                        <img :src="product.image" :alt="product.name" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                        
+                        <div class="absolute inset-0 bg-black/5 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
+                            <button @click="selectedProduct = product; openModal = true" class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-[#0a2f15] hover:bg-[#16a34a] hover:text-white transition-all shadow-lg transform hover:-translate-y-1" title="Quick View">
+                                <i class="ri-eye-line text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col flex-grow px-1">
+                        <span class="text-sm font-semibold text-gray-500 mb-1" x-text="`Qty: ${product.unit}`"></span>
+                        
+                        <h3 class="text-xl md:text-2xl font-extrabold text-[#163321] mb-1.5 leading-tight line-clamp-1" x-text="product.name"></h3>
+                        
+                        <p class="text-gray-600 text-sm leading-snug mb-4 line-clamp-2" x-text="product.description"></p>
+                        
+                        <div class="flex items-center justify-between mt-auto mb-5">
+                            <div class="flex items-baseline gap-1.5">
+                                <span class="text-2xl font-extrabold text-[#163321]" x-text="product.price"></span>
+                                <span class="text-sm font-semibold text-gray-500 line-through" x-text="product.price"></span>
+                            </div>
+                            
+                            <div class="flex items-center gap-1.5">
+                                <div class="flex text-[#F59E0B] text-[11px] gap-0.5">
+                                    <i class="ri-star-fill"></i>
+                                    <i class="ri-star-fill"></i>
+                                    <i class="ri-star-fill"></i>
+                                    <i class="ri-star-fill"></i>
+                                    <i class="ri-star-fill"></i>
+                                </div>
+                                <span class="text-[10px] md:text-xs font-semibold text-gray-600" x-text="`${product.reviews} reviews`"></span>
+                            </div>
+                        </div>
+
+                        <button @click="$store.cart.add({id: product.id, name: product.name, price: product.price.replace('₹', ''), image: product.image, unit: product.unit})" class="w-full bg-[#B2E142] text-[#163321] py-3 rounded-2xl font-extrabold text-[15px] hover:bg-[#9DCA36] transition-colors flex items-center justify-center z-20 relative shadow-sm">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <div x-show="openModal" 
+         style="display: none;" 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="openModal = false"></div>
+
+        <div class="bg-white rounded-3xl w-full max-w-4xl relative z-10 overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95">
+            
+            <button @click="openModal = false" class="absolute top-4 right-4 z-20 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 text-gray-600 transition-colors">
+                <i class="ri-close-line text-xl"></i>
+            </button>
+
+            <div class="w-full md:w-1/2 bg-[#f3f4f6] flex items-center justify-center p-8 relative">
+                {% comment %} old badge {% endcomment %}
+                {% comment %} <div x-show="selectedProduct.badge" class="absolute top-6 left-6 bg-[#FFC107] text-[#0a2f15] text-sm font-bold px-4 py-1 rounded-full shadow-sm" x-text="selectedProduct.badge"></div> {% endcomment %}
+                {% comment %} new badge {% endcomment %}
+                <div 
+                    x-show="selectedProduct.badge"
+                    :style="`background-color: ${selectedProduct.badge_color || '#FFC107'}; color: ${selectedProduct.badge_text_color || '#0a2f15'}`"
+                    class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm"
+                    x-text="selectedProduct.badge"
+                ></div>
+                <img :src="selectedProduct.image" :alt="selectedProduct.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
+            </div>
+
+            <div class="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
+                <span class="text-[#16a34a] font-bold text-sm tracking-widest uppercase mb-2 block">Daillyfresh</span>
+                <h2 class="text-3xl md:text-4xl font-display font-bold text-[#0a2f15] mb-4" x-text="selectedProduct.name"></h2>
+                
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="flex text-[#FFC107] text-lg">
+                        <i class="ri-star-fill"></i>
+                        <i class="ri-star-fill"></i>
+                        <i class="ri-star-fill"></i>
+                        <i class="ri-star-fill"></i>
+                        <i class="ri-star-half-fill"></i>
+                    </div>
+                    <span class="text-gray-500 text-sm" x-text="`(${selectedProduct.reviews} Reviews)`"></span>
+                </div>
+
+                <div class="flex items-end gap-2 mb-6">
+                    <span class="text-4xl font-bold text-[#16a34a]" x-text="selectedProduct.price"></span>
+                    <span class="text-lg text-gray-400 mb-1" x-text="`Qty: ${selectedProduct.unit}`"></span>
+                </div>
+
+                <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedProduct.description + ' Sourced directly from healthy, well-cared cattle. No preservatives, no adulteration. Pure freshness guaranteed.'"></p>
+
+                <div class="flex gap-4">
+                    <button @click="$store.cart.add({id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.price.replace('₹', ''), image: selectedProduct.image, unit: selectedProduct.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                        <i class="ri-shopping-cart-2-fill"></i> Add to Cart
+                    </button>
+                    <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
+                        <i class="ri-heart-line text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="py-16 bg-[#f3f4f6] overflow-hidden">
+    <div class="container mx-auto px-6 text-center mb-10">
+        <span class="text-[#16a34a] font-bold uppercase tracking-wider text-xs md:text-sm">Trusted Availability</span>
+        <h3 class="text-2xl md:text-3xl font-display font-bold text-[#0a2f15] mt-2">
+            Also Available On
+        </h3>
+    </div>
+
+    {% if partner_logos %}
+    <div class="relative w-full">
+        <div class="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-[#f3f4f6] to-transparent z-10 pointer-events-none"></div>
+        <div class="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-[#f3f4f6] to-transparent z-10 pointer-events-none"></div>
+
+        <div class="flex items-center gap-16 md:gap-24 animate-marquee whitespace-nowrap min-w-full py-2">
+            
+            {% for logo in partner_logos %}
+                <img src="{{ logo.image.url }}" alt="Partner" class="h-16 md:h-22 w-auto object-contain">
+            {% endfor %}
+
+            {% comment %} Duplicate for seamless loop {% endcomment %}
+            {% for logo in partner_logos %}
+                <img src="{{ logo.image.url }}" alt="Partner" class="h-16 md:h-22 w-auto object-contain">
+            {% endfor %}
+
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<section id="testimonials" class="py-24 bg-white relative">
+  <div class="container mx-auto px-6">
+    <div class="text-center mb-16 animate-fade-in-up">
+      <span class="text-[#16a34a] font-bold uppercase tracking-wider">Testimonials</span>
+      <h2 class="text-3xl md:text-5xl font-display font-bold text-[#0a2f15] mt-2">
+        What our client say about us
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto">
+      {% for t in testimonials %}
+      <div class="{% if t.is_dark_card %}bg-[#0a2f15]{% else %}bg-white border-2 border-[#16a34a]/20{% endif %} p-8 rounded-3xl shadow-xl relative animate-fade-in-up">
+
+        <i class="ri-double-quotes-l text-5xl {% if t.is_dark_card %}text-[#84cc16]/20{% else %}text-[#16a34a]/20{% endif %} absolute top-6 right-8"></i>
+
+        <p class="{% if t.is_dark_card %}text-green-100/90{% else %}text-gray-600{% endif %} italic text-lg leading-relaxed mb-8">
+          "{{ t.feedback }}"
+        </p>
+
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 {% if t.is_dark_card %}bg-[#16a34a]{% else %}bg-gray-200{% endif %} rounded-full overflow-hidden shrink-0">
+            <img src="{{ t.image.url }}" alt="{{ t.name }}" class="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h4 class="text-xl font-bold {% if t.is_dark_card %}text-white{% else %}text-[#0a2f15]{% endif %}">{{ t.name }}</h4>
+            <p class="{% if t.is_dark_card %}text-[#84cc16]{% else %}text-[#16a34a]{% endif %} font-medium text-sm">{{ t.occupation }}</p>
+
+            <div class="flex gap-1 text-[#FFC107] mt-1 text-sm">
+              {% for i in "12345" %}
+                {% if forloop.counter <= t.stars %}
+                  <i class="ri-star-fill"></i>
+                {% else %}
+                  <i class="ri-star-line"></i>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Animated Dashed Arrow */
+  .dashed-arrow-animate {
+    stroke-dashoffset: 200;
+    animation: dashScroll 3s linear infinite;
+  }
+  @keyframes dashScroll {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Fixed Marquee Animation */
+  .animate-marquee {
+    animation: marquee 20s linear infinite; /* Reduced from 30s to 20s for faster speed */
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+</style>
+
+{% endblock %}
