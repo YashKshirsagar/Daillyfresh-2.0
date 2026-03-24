@@ -50,7 +50,7 @@
         display: flex !important;
       }
 
-      @media (min-width: 1024px) {
+      @media (min-width: 1080px) {
         .nav-desktop {
           display: flex !important;
         }
@@ -63,6 +63,9 @@
         .nav-mobile-dropdown {
           display: none !important;
         }
+        .header-inner {
+          padding: 0 5rem !important;
+        }
       }
 
       /* ── Classic Full-Width Header ── */
@@ -72,24 +75,12 @@
         -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid rgba(22, 163, 74, 0.12);
         box-shadow: 0 2px 16px rgba(0, 0, 0, 0.07);
-        {% comment %} transition:
-          background 0.3s,
-          box-shadow 0.3s,
-          border-color 0.3s; {% endcomment %}
       }
-
-      /* Transparent mode on home hero */
-      {% comment %} .header-transparent .site-header {
-        background: rgba(0, 0, 0, 0.18);
-        border-bottom-color: rgba(255, 255, 255, 0.12);
-        box-shadow: none;
-      } {% endcomment %}
 
       .header-inner {
         width: 100%;
         padding: 0 1.5rem;
-        {% comment %} height: 68px; {% endcomment %}
-        height: 80px;
+        height: 90px;
         display: flex;
         align-items: center;
         justify-content: flex-start;
@@ -98,6 +89,27 @@
 
       .header-logo {
         flex-shrink: 0;
+      }
+      .logo {
+        height: 3rem; /* h-12 equivalent */
+        width: auto;
+        object-fit: contain;
+      }
+      @media (min-width: 1080px) {
+        .logo {
+          height: 3.5rem;
+        }
+      }
+      .logo-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+      }
+
+      @media (min-width: 1080px) {
+        .logo-text {
+          font-size: 1.5rem;
+        }
       }
 
       .header-nav-wrapper {
@@ -118,7 +130,7 @@
       .nav-link {
         position: relative;
         font-weight: 600;
-        font-size: 0.88rem;
+        font-size: 1rem;
         letter-spacing: 0.01em;
         color: #1a3326;
         text-decoration: none;
@@ -196,6 +208,12 @@
         text-decoration: none;
         flex-shrink: 0;
       }
+      @media screen and (min-width: 1080px) {
+        .icon-btn{
+          width: 42px;
+          height: 42px;
+        }
+      }
       .icon-btn:hover {
         background: #dcfce7;
         color: #16a34a;
@@ -213,8 +231,8 @@
 
       /* Avatar */
       .avatar {
-        width: 36px;
-        height: 36px;
+        width: 42px;
+        height: 42px;
         border-radius: 50%;
         background: linear-gradient(135deg, #16a34a, #0a2f15);
         color: #fff;
@@ -368,9 +386,9 @@
             <img
               src="{% static 'images/logo.png' %}"
               alt="Daillyfresh Logo"
-              class="h-12 w-auto object-contain"
+              class="logo"
             />
-            <span class="text-xl font-semibold ml-2">Daillyfresh</span>
+            <span class="logo-text">Daillyfresh</span>
           </a>
 
           <!-- Navigation and Actions Wrapper -->
@@ -400,6 +418,12 @@
                 class="nav-link"
                 :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >Products</a
+              >
+              <a
+                href="/#products"
+                class="nav-link"
+                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
+                >Combos</a
               >
               <a
                 href="#contact"
@@ -561,6 +585,13 @@
             style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
           ></i
           >Products
+        </a>
+        <a href="/#products" @click="mobileMenuOpen=false" class="mobile-link">
+          <i
+            class="ri-gift-line"
+            style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
+          ></i
+          >Combos
         </a>
         <a href="#contact" @click="mobileMenuOpen=false" class="mobile-link">
           <i
