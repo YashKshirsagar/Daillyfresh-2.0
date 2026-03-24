@@ -1,17 +1,24 @@
 from django.db import models
-from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
-from cloudinary.models import CloudinaryField
+from django.conf import settings
+
+# Choose image field based on environment
+if 'cloudinary_storage' in settings.INSTALLED_APPS:
+    from cloudinary.models import CloudinaryField
+    def ImageField(upload_to='', **kwargs):
+        return CloudinaryField('image')
+else:
+    def ImageField(upload_to='', **kwargs):
+        return models.ImageField(upload_to=upload_to, **kwargs)
 
 # Create your models here.
 class HomeHero(models.Model):
     title = models.CharField(max_length=200, blank=True, default='')
     subtitle = models.CharField(max_length=300, blank=True, default='')
-    # image = models.ImageField(upload_to='hero/')
-    image = CloudinaryField('image')
+    image = ImageField(upload_to='hero/')
     show_button = models.BooleanField(default=True)
     order = models.IntegerField(default=0)
 
@@ -28,8 +35,7 @@ class Product(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=50, help_text="e.g., 1000 ml, 500 gm")
-    # image = models.ImageField(upload_to='products/')
-    image = CloudinaryField('image')
+    image = ImageField(upload_to='products/')
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     # is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -48,8 +54,7 @@ class Product(models.Model):
         return self.name
 
 class PartnerLogo(models.Model):
-    # image = models.ImageField(upload_to='partners/')
-    image = CloudinaryField('image')
+    image = ImageField(upload_to='partners/')
     order = models.PositiveIntegerField(default=0, help_text="Display order")
 
     class Meta:
@@ -64,8 +69,7 @@ class Testimonial(models.Model):
     name = models.CharField(max_length=100)
     occupation = models.CharField(max_length=150)
     feedback = models.TextField()
-    image = CloudinaryField('image')
-    # image = models.ImageField(upload_to='partners/')
+    image = ImageField(upload_to='testimonials/')
     stars = models.PositiveSmallIntegerField(default=5, choices=[(i, i) for i in range(1, 6)])
     is_dark_card = models.BooleanField(default=False, help_text="Dark green background card")
     order = models.PositiveIntegerField(default=0)
