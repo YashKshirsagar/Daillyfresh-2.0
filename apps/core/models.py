@@ -53,6 +53,27 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+class Combo(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    unit = models.CharField(max_length=50, help_text="e.g., 1 Pack, 2 Bottles")
+    image = ImageField(upload_to='combos/')
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
+    reviews_count = models.IntegerField(default=5)
+    badge = models.CharField(max_length=50, blank=True, null=True)
+    badge_color = models.CharField(max_length=7, blank=True, null=True)
+    badge_text_color = models.CharField(max_length=7, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Combo'
+        verbose_name_plural = 'Combos'
+
+    def __str__(self):
+        return self.name
+
 class PartnerLogo(models.Model):
     image = ImageField(upload_to='partners/')
     order = models.PositiveIntegerField(default=0, help_text="Display order")
