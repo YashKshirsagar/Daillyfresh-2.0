@@ -442,12 +442,12 @@
         <div class="flex items-center gap-16 md:gap-24 animate-marquee whitespace-nowrap min-w-full py-2">
             
             {% for logo in partner_logos %}
-                <img src="{{ logo.image.url }}" alt="Partner" class="h-16 md:h-22 w-auto object-contain">
+                <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo">
             {% endfor %}
 
             {% comment %} Duplicate for seamless loop {% endcomment %}
             {% for logo in partner_logos %}
-                <img src="{{ logo.image.url }}" alt="Partner" class="h-16 md:h-22 w-auto object-contain">
+                <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo">
             {% endfor %}
 
         </div>
@@ -511,9 +511,15 @@
     }
   }
 
-  /* Fixed Marquee Animation */
+  /* Fix - faster on mobile */
   .animate-marquee {
-    animation: marquee 20s linear infinite; /* Reduced from 30s to 20s for faster speed */
+    animation: marquee 8s linear infinite; /* faster on mobile */
+  }
+
+  @media (min-width: 1080px) {
+    .animate-marquee {
+      animation: marquee 20s linear infinite; /* normal on desktop */
+    }
   }
   @keyframes marquee {
     0% { transform: translateX(0%); }
