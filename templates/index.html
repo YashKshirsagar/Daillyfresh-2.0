@@ -442,12 +442,12 @@
         <div class="flex items-center gap-16 md:gap-24 animate-marquee whitespace-nowrap min-w-full py-2">
             
             {% for logo in partner_logos %}
-                <img src="{{ logo.image.url }}" alt="Partner" class="h-16 md:h-22 w-auto object-contain">
+                <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo">
             {% endfor %}
 
             {% comment %} Duplicate for seamless loop {% endcomment %}
             {% for logo in partner_logos %}
-                <img src="{{ logo.image.url }}" alt="Partner" class="h-16 md:h-22 w-auto object-contain">
+                <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo">
             {% endfor %}
 
         </div>
