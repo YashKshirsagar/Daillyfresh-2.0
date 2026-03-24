@@ -511,9 +511,15 @@
     }
   }
 
-  /* Fixed Marquee Animation */
+  /* Fix - faster on mobile */
   .animate-marquee {
-    animation: marquee 20s linear infinite; /* Reduced from 30s to 20s for faster speed */
+    animation: marquee 8s linear infinite; /* faster on mobile */
+  }
+
+  @media (min-width: 1080px) {
+    .animate-marquee {
+      animation: marquee 20s linear infinite; /* normal on desktop */
+    }
   }
   @keyframes marquee {
     0% { transform: translateX(0%); }
