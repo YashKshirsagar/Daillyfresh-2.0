@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Terms & Conditions | Daillyfresh{% endblock %}
+
+{% block content %}
+<style>
+  .policy-container {
+    max-width: 900px;
+  }
+  
+  .policy-section {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .policy-section:last-child {
+    border-bottom: none;
+  }
+  
+  .policy-section h2 {
+    color: #16a34a;
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .policy-section ul {
+    padding-left: 1.5rem;
+    margin-top: 1rem;
+  }
+  
+  .policy-section li {
+    list-style-type: disc;
+    margin-bottom: 0.75rem;
+    color: #374151;
+    line-height: 1.6;
+  }
+  
+  .policy-section p {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+</style>
+
+<div class="bg-white">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 lg:py-20 policy-container">
+    <!-- Header -->
+    <div class="mb-8 md:mb-12">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4 text-[#0a2f15]">Terms & Conditions</h1>
+      <p class="text-gray-600 text-base md:text-lg">Last updated: 15-09-2025</p>
+    </div>
+
+    <!-- Introduction -->
+    <p class="text-gray-700 text-base md:text-lg mb-8 leading-relaxed">
+      These Terms & Conditions ("Terms") govern your use of the Daillyfresh website and the process by which you place orders via contact channels (WhatsApp or phone). By using our website and contacting us for orders, you accept these Terms.
+    </p>
+
+    <!-- Section 1 -->
+    <div class="policy-section">
+      <h2>1. About Daillyfresh</h2>
+      <p>
+        Daillyfresh delivers pure, fresh, hygienic dairy & daily-needs products—including cow milk, buffalo milk, Power Eggs, and Malai Dahi—from farms to your home. Contact channels for orders:
+      </p>
+      <ul>
+        <li>WhatsApp: 8149415113 / WhatsApp button on site</li>
+        <li>Phone: +91-8149415113</li>
+        <li>General inquiries: support@daillyfresh.com</li>
+      </ul>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="policy-section">
+      <h2>2. Order Process</h2>
+      <ul>
+        <li>All orders must be placed via WhatsApp message or phone call. The website is informational only and does not enable direct checkout.</li>
+        <li>You'll choose between subscription plans (monthly, quarterly, half-yearly) for milk and eggs, with curd (Malai Dahi) available as an optional add-on per delivery.</li>
+        <li>Once you place an order via WhatsApp or call, we will confirm availability, price, delivery schedule, and final order details in writing (message or WhatsApp). No order is accepted until such confirmation.</li>
+      </ul>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="policy-section">
+      <h2>3. Subscription & Billing</h2>
+      <ul>
+        <li>When you subscribe, you authorize recurring payments (as agreed—cash on delivery, UPI, bank transfer, or other payment mode)—for the agreed subscription period.</li>
+        <li>Subscriptions renew automatically unless you inform us at least 48 hours before the next billing cycle to pause or cancel.</li>
+        <li>For add-on curd orders, we'll include pricing and delivery instructions with the main subscription order.</li>
+      </ul>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="policy-section">
+      <h2>4. Pricing & Taxes</h2>
+      <ul>
+        <li>Prices (per litre of milk, per egg box, per jar of curd) and applicable taxes (if any) will be communicated at the time of order confirmation.</li>
+        <li>We will provide details of MRP or unit price for transparency, as required under Legal Metrology rules. See section 7 for packaging compliance.</li>
+      </ul>
+    </div>
+
+    <!-- Section 5 -->
+    <div class="policy-section">
+      <h2>5. Delivery, Packaging & Shelf Information</h2>
+      <ul>
+        <li>Deliveries will be made according to the schedule we agree upon (morning slot or other) to the address you share via WhatsApp or call.</li>
+        <li>Milk and eggs are delivered in hygienic containers with required labelling (batch number, "best before" date or thickening window for curd, net quantity, FSSAI license, etc.), in compliance with Food Safety & Standards and Legal Metrology rules.</li>
+      </ul>
+    </div>
+
+    <!-- Section 6 -->
+    <div class="policy-section">
+      <h2>6. Cancellations & Modifications</h2>
+      <ul>
+        <li>You may cancel or modify your subscription or specific delivery by contacting us at least 48 hours before that delivery is scheduled.</li>
+        <li>Last-minute changes (within 48 hours) may not be accommodated due to logistics constraints.</li>
+      </ul>
+    </div>
+
+    <!-- Section 7 -->
+    <div class="policy-section">
+      <h2>7. Damages, Spills & Complaints</h2>
+      <ul>
+        <li>Dairy is perishable. Please inspect your delivery at the time of receipt.</li>
+        <li>If a product is spoiled, damaged, or missing, inform us within 2 hours of delivery via WhatsApp or phone with photographic evidence and order details. We will offer either a replacement in the next delivery or a credit/refund, at our discretion.</li>
+        <li>This follows guidance from consumer protection norms and "E-commerce rules" about handling complaints, adapted to WhatsApp/phone ordering.</li>
+      </ul>
+    </div>
+
+    <!-- Section 8 -->
+    <div class="policy-section">
+      <h2>8. Storage & Use</h2>
+      <ul>
+        <li>Products should be stored per instructions (e.g., refrigeration). Quality issues resulting from improper storage are not our responsibility.</li>
+      </ul>
+    </div>
+
+    <!-- Section 9 -->
+    <div class="policy-section">
+      <h2>9. Liability & Indemnity</h2>
+      <ul>
+        <li>Daillyfresh's liability is limited to the value of the affected delivery. We are not responsible for indirect or consequential losses.</li>
+        <li>You agree to indemnify us if any claim arises from your misuse of the product or misinformation you provided (e.g., wrong delivery instructions).</li>
+      </ul>
+    </div>
+
+    <!-- Section 10 -->
+    <div class="policy-section">
+      <h2>10. Force Majeure</h2>
+      <ul>
+        <li>Delivery or service disruptions due to events beyond our control (weather, civic disruptions, etc.) are exempt from liability.</li>
+      </ul>
+    </div>
+
+    <!-- Section 11 -->
+    <div class="policy-section">
+      <h2>11. Governing Law</h2>
+      <ul>
+        <li>These Terms are governed by Indian law. Any disputes will be settled in courts in Nagpur, Maharashtra.</li>
+      </ul>
+    </div>
+
+    <!-- Section 12 -->
+    <div class="policy-section">
+      <h2>12. Updates to Terms</h2>
+      <ul>
+        <li>We may update these Terms; any changes will be posted on this site with a new "Last updated" date.</li>
+      </ul>
+    </div>
+
+    <!-- Section 13 -->
+    <div class="policy-section">
+      <h2>13. Contact</h2>
+      <p>For support or concerns, reach out via:</p>
+      <ul>
+        <li>WhatsApp: 8149415113</li>
+        <li>Phone: +91-8149415113</li>
+        <li>Email: support@daillyfresh.com</li>
+      </ul>
+    </div>
+
+    <!-- Back to Home Button -->
+    <div class="mt-12 pt-8 border-t border-gray-200">
+      <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-[#16a34a] text-white rounded-full font-bold hover:bg-[#84cc16] transition-all transform hover:-translate-y-1">
+        <i class="ri-arrow-left-line"></i> Back to Home
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
