@@ -331,3 +331,12 @@ def apply_affiliate_coupon(request, code):
         messages.error(request, "Invalid referral link or coupon code.")
 
     return redirect('home')
+
+
+# --- Policy Pages ---
+def terms_and_conditions(request):
+    return render(request, 'terms.html')
+
+
+def refund_policy(request):
+    return render(request, 'refund-policy.html')

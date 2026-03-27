@@ -3,7 +3,8 @@ from django.urls import path, include
 from core.views import (
     home, signup_view, login_view, logout_view,
     cart_page, add_address, place_order,
-    apply_affiliate_coupon, remove_coupon, apply_coupon
+    apply_affiliate_coupon, remove_coupon, apply_coupon,
+    terms_and_conditions, refund_policy
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -24,6 +25,10 @@ urlpatterns = [
     path('place-order/', place_order, name='place_order'),
     path('apply-coupon/', apply_coupon, name='apply_coupon'),
     path('remove-coupon/', remove_coupon, name='remove_coupon'),
+
+    # Policy Pages
+    path('terms-and-conditions/', terms_and_conditions, name='terms_and_conditions'),
+    path('refund-policy/', refund_policy, name='refund_policy'),
 
     # Affiliate / Promo URL — freelancer/YouTuber ke liye
     path('ref/<str:code>/', apply_affiliate_coupon, name='apply_affiliate_coupon'),
