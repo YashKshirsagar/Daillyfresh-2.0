@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.conf import settings
-from .models import HomeHero, Product, Address, Order, OrderItem, Coupon, PartnerLogo, Testimonial, Combo
+from .models import HomeHero, Product, Address, Order, OrderItem, Coupon, PartnerLogo, Testimonial
 
 admin.site.register(HomeHero)
 admin.site.register(Product)
@@ -143,7 +143,3 @@ class PartnerLogoAdmin(admin.ModelAdmin):
 class TestimonialAdmin(admin.ModelAdmin):
     list_display = ('name', 'occupation', 'stars', 'is_dark_card', 'order', 'is_active')
     list_editable = ('order', 'is_dark_card', 'is_active')
-
-@admin.register(Combo)
-class ComboAdmin(admin.ModelAdmin):
-    list_display = ['name', 'price', 'unit', 'badge']
