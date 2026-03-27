@@ -4,7 +4,8 @@ from core.views import (
     home, signup_view, login_view, logout_view,
     cart_page, add_address, place_order,
     apply_affiliate_coupon, remove_coupon, apply_coupon,
-    terms_and_conditions, refund_policy
+    terms_and_conditions, refund_policy,
+    get_user_profile, update_user_profile, update_address, delete_address
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -18,6 +19,12 @@ urlpatterns = [
     path('signup/', signup_view, name='signup'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+
+    # Profile URLs
+    path('api/profile/', get_user_profile, name='get_user_profile'),
+    path('api/profile/update/', update_user_profile, name='update_user_profile'),
+    path('api/address/update/', update_address, name='update_address'),
+    path('api/address/delete/', delete_address, name='delete_address'),
 
     # Cart & Checkout URLs
     path('cart/', cart_page, name='cart_page'),

@@ -340,3 +340,133 @@ def terms_and_conditions(request):
 
 def refund_policy(request):
     return render(request, 'refund-policy.html')
+
+
+# --- Profile Views ---
+@login_required(login_url='login')
+def get_user_profile(request):
+    """AJAX endpoint to get user profile data"""
+    user = request.user
+    addresses = Address.objects.filter(user=user)
+    
+    profile_data = {
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'addresses': [
+            {
+                'id': addr.id,
+                'full_name': addr.full_name,
+                'phone_number': addr.phone_number,
+                'street_address': addr.street_address,
+                'city': addr.city,
+                'state': addr.state,
+                'pincode': addr.pincode,
+                'is_default': addr.is_default,
+            }
+            for addr in addresses
+        ]
+    }
+    
+    return JsonResponse(profile_data)
+
+
+@login_required(login_url='login')
+def update_user_profile(request):
+    """AJAX endpoint to update user profile"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+    
+    try:
+        data = json.loads(request.body)
+        user = request.user
+        
+        # Update user info
+        if 'first_name' in data:
+            user.first_name = data['first_name'].strip()
+        if 'last_name' in data:
+            user.last_name = data['last_name'].strip()
+        if 'email' in data:
+            user.email = data['email'].strip()
+        
+        # Validate email uniqueness
+        if 'email' in data and User.objects.filter(email=data['email']).exclude(id=user.id).exists():
+            return JsonResponse({'success': False, 'message': 'Email already in use'}, status=400)
+        
+        user.save()
+        return JsonResponse({'success': True, 'message': 'Profile updated successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@login_required(login_url='login')
+def update_address(request):
+    """AJAX endpoint to add/update address"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+    
+    try:
+        data = json.loads(request.body)
+        user = request.user
+        address_id = data.get('id')
+        
+        if address_id:
+            # Update existing address
+            address = Address.objects.get(id=address_id, user=user)
+        else:
+            # Create new address
+            address = Address(user=user)
+        
+        address.full_name = data.get('full_name', '').strip()
+        address.phone_number = data.get('phone_number', '').strip()
+        address.street_address = data.get('street_address', '').strip()
+        address.city = data.get('city', '').strip()
+        address.state = data.get('state', '').strip()
+        address.pincode = data.get('pincode', '').strip()
+        address.is_default = data.get('is_default', False)
+        
+        if not all([address.full_name, address.phone_number, address.street_address, address.city, address.state, address.pincode]):
+            return JsonResponse({'success': False, 'message': 'All fields are required'}, status=400)
+        
+        address.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Address saved successfully',
+            'address': {
+                'id': address.id,
+                'full_name': address.full_name,
+                'phone_number': address.phone_number,
+                'street_address': address.street_address,
+                'city': address.city,
+                'state': address.state,
+                'pincode': address.pincode,
+                'is_default': address.is_default,
+            }
+        })
+    except Address.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Address not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+@login_required(login_url='login')
+def delete_address(request):
+    """AJAX endpoint to delete address"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method'}, status=400)
+    
+    try:
+        data = json.loads(request.body)
+        address_id = data.get('id')
+        user = request.user
+        
+        address = Address.objects.get(id=address_id, user=user)
+        address.delete()
+        
+        return JsonResponse({'success': True, 'message': 'Address deleted successfully'})
+    except Address.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Address not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)

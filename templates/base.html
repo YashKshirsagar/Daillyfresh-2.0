@@ -417,8 +417,16 @@
   </head>
 
   <body
+    x-data="{ 
+      profileModalOpen: false, 
+      profileUser: null, 
+      profileTab: 'info',
+      editingProfile: false,
+      editForm: { first_name: '', last_name: '', email: '' }
+    }"
     class="bg-white font-sans text-gray-800 antialiased flex flex-col min-h-screen"
   >
+    {% csrf_token %}
     <!-- ══ HEADER ══ -->
     <header
       x-data="{ mobileMenuOpen: false}"
@@ -525,8 +533,8 @@
                   <p class="dropdown-label">Signed in as</p>
                   <p class="dropdown-username">{{ user.username }}</p>
                 </div>
-                <a href="#" class="dropdown-link"
-                  ><i class="ri-user-line"></i> My Profile</a
+                <button @click="profileOpen = false; profileModalOpen = true; fetch('/api/profile/').then(r => r.json()).then(data => profileUser = data)" class="dropdown-link w-full text-left"
+                  ><i class="ri-user-line"></i> My Profile</button
                 >
                 <a href="#" class="dropdown-link"
                   ><i class="ri-shopping-bag-line"></i> My Orders</a
@@ -649,13 +657,13 @@
         <hr class="mobile-divider" />
 
         {% if user.is_authenticated %}
-        <a href="#" class="mobile-link">
+        <button @click="mobileMenuOpen = false; profileModalOpen = true; fetch('/api/profile/').then(r => r.json()).then(data => profileUser = data)" class="mobile-link w-full text-left">
           <i
             class="ri-user-line"
             style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"
           ></i
           >My Profile
-        </a>
+        </button>
         <a href="#" class="mobile-link">
           <i
             class="ri-shopping-bag-line"
@@ -1014,7 +1022,336 @@
             }, 4000);
           }
         });
+
+        // ── Profile Functions ──
+        window.profileFunctions = {
+          async loadProfile() {
+            try {
+              const response = await fetch('/api/profile/');
+              const data = await response.json();
+              document.dispatchEvent(new CustomEvent('profileLoaded', { detail: data }));
+              return data;
+            } catch (error) {
+              console.error('Error loading profile:', error);
+            }
+          }
+        };
       });
     </script>
+
+    <!-- ── Profile Modal ── -->
+    <div
+      x-show="profileModalOpen"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4"
+      @click.away="profileModalOpen = false"
+    >
+      <div
+        x-show="profileModalOpen"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+        @click.stop
+        class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+      >
+        <!-- Modal Header -->
+        <div class="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 class="text-2xl font-bold text-[#0a2f15]">My Profile</h2>
+          <button @click="profileModalOpen = false" class="text-gray-500 hover:text-gray-700">
+            <i class="ri-close-line text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <!-- Profile Info -->
+          <div class="space-y-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold text-gray-800">Personal Information</h3>
+              <button
+                @click="editingProfile ? (editingProfile = false) : (editingProfile = true, editForm = { first_name: profileUser?.first_name || '', last_name: profileUser?.last_name || '', email: profileUser?.email || '' })"
+                class="px-4 py-2 bg-[#16a34a] text-white rounded-lg text-sm font-medium hover:bg-[#128a3d] transition-colors"
+              >
+                <i :class="editingProfile ? 'ri-close-line' : 'ri-edit-line'" class="mr-2"></i>
+                <span x-text="editingProfile ? 'Cancel' : 'Edit'"></span>
+              </button>
+            </div>
+
+            <!-- View Mode -->
+            <div x-show="!editingProfile" class="grid md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Username</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.username || '-'"></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Email</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.email || '-'"></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">First Name</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.first_name || 'Not provided'"></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Last Name</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.last_name || 'Not provided'"></p>
+              </div>
+            </div>
+
+            <!-- Edit Mode -->
+            <div x-show="editingProfile" class="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg">
+              <h4 class="font-semibold text-gray-900">Edit Personal Information</h4>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  x-model="editForm.email"
+                  type="email"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a]"
+                />
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                  <input
+                    x-model="editForm.first_name"
+                    type="text"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a]"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input
+                    x-model="editForm.last_name"
+                    type="text"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a]"
+                  />
+                </div>
+              </div>
+
+              <div class="flex gap-3">
+                <button
+                  @click="async function() {
+                    try {
+                      const response = await fetch('/api/profile/update/', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                        },
+                        body: JSON.stringify({
+                          first_name: editForm.first_name,
+                          last_name: editForm.last_name,
+                          email: editForm.email
+                        })
+                      });
+                      const data = await response.json();
+                      if (data.success) {
+                        profileUser = await (await fetch('/api/profile/')).json();
+                        editingProfile = false;
+                        alert('Profile updated successfully!');
+                      } else {
+                        alert('Error: ' + (data.message || 'Failed to update'));
+                      }
+                    } catch (error) {
+                      alert('Error updating profile: ' + error.message);
+                    }
+                  }"
+                  class="flex-1 px-4 py-2 bg-[#16a34a] text-white rounded-lg font-medium hover:bg-[#128a3d] transition-colors"
+                >
+                  <i class="ri-check-line mr-2"></i>Save Changes
+                </button>
+              </div>
+            </div>
+
+            <div x-show="!profileUser" class="text-center py-8 text-gray-600">
+              <i class="ri-loader-4-line text-3xl animate-spin text-[#16a34a] mb-2"></i>
+              <p>Loading profile...</p>
+            </div>
+          </div>
+
+          <!-- Addresses Section -->
+          <div x-show="profileUser && profileUser.addresses" class="mt-8 pt-8 border-t border-gray-200">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-800">Delivery Addresses</h3>
+              <button
+                @click="profileUser.addresses.push({ id: null, full_name: '', phone_number: '', street_address: '', city: '', state: '', pincode: '', is_default: false, editing: true })"
+                class="px-4 py-2 bg-[#16a34a] text-white rounded-lg text-sm font-medium hover:bg-[#128a3d] transition-colors"
+              >
+                <i class="ri-add-line mr-2"></i>Add Address
+              </button>
+            </div>
+
+            <div class="space-y-3">
+              <template x-for="(address, index) in profileUser?.addresses || []" :key="index">
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-[#16a34a] transition-all">
+                  <!-- View Mode -->
+                  <div x-show="!address.editing">
+                    <div class="flex items-start justify-between">
+                      <div>
+                        <div class="flex items-center gap-2">
+                          <h4 class="font-semibold text-gray-900" x-text="address.full_name"></h4>
+                          <span x-show="address.is_default" class="px-2 py-1 bg-[#dcfce7] text-[#16a34a] text-xs font-semibold rounded">Default</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1" x-text="address.phone_number"></p>
+                        <p class="text-sm text-gray-600" x-text="address.street_address"></p>
+                        <p class="text-sm text-gray-600" x-text="`${address.city}, ${address.state} ${address.pincode}`"></p>
+                      </div>
+                      <div class="flex gap-2">
+                        <button
+                          @click="address.editing = true"
+                          class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <i class="ri-edit-line"></i>
+                        </button>
+                        <button
+                          @click="async function() {
+                            if (confirm('Delete this address?')) {
+                              try {
+                                const response = await fetch('/api/address/delete/', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                                  },
+                                  body: JSON.stringify({ id: address.id })
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                  profileUser = await (await fetch('/api/profile/')).json();
+                                }
+                              } catch (error) {
+                                alert('Error: ' + error.message);
+                              }
+                            }
+                          }"
+                          class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <i class="ri-delete-bin-line"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Edit Mode -->
+                  <div x-show="address.editing" class="space-y-3 bg-gray-50 p-3 rounded">
+                    <h5 class="font-semibold text-gray-900">
+                      <span x-show="!address.id">Add New Address</span>
+                      <span x-show="address.id">Edit Address</span>
+                    </h5>
+
+                    <div class="grid md:grid-cols-2 gap-3">
+                      <input
+                        x-model="address.full_name"
+                        type="text"
+                        placeholder="Full Name"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] text-sm"
+                      />
+                      <input
+                        x-model="address.phone_number"
+                        type="tel"
+                        placeholder="Phone"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] text-sm"
+                      />
+                    </div>
+
+                    <input
+                      x-model="address.street_address"
+                      type="text"
+                      placeholder="Street Address"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] text-sm"
+                    />
+
+                    <div class="grid grid-cols-3 gap-3">
+                      <input
+                        x-model="address.city"
+                        type="text"
+                        placeholder="City"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] text-sm"
+                      />
+                      <input
+                        x-model="address.state"
+                        type="text"
+                        placeholder="State"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] text-sm"
+                      />
+                      <input
+                        x-model="address.pincode"
+                        type="text"
+                        placeholder="Pincode"
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16a34a] text-sm"
+                      />
+                    </div>
+
+                    <label class="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        x-model="address.is_default"
+                        type="checkbox"
+                        class="w-4 h-4 rounded border-gray-300"
+                      />
+                      <span class="font-medium text-gray-700">Default address</span>
+                    </label>
+
+                    <div class="flex gap-2">
+                      <button
+                        @click="async function() {
+                          try {
+                            const response = await fetch('/api/address/update/', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                              },
+                              body: JSON.stringify({
+                                id: address.id || null,
+                                full_name: address.full_name,
+                                phone_number: address.phone_number,
+                                street_address: address.street_address,
+                                city: address.city,
+                                state: address.state,
+                                pincode: address.pincode,
+                                is_default: address.is_default
+                              })
+                            });
+                            const data = await response.json();
+                            if (data.success) {
+                              profileUser = await (await fetch('/api/profile/')).json();
+                            } else {
+                              alert('Error: ' + (data.message || 'Failed to save'));
+                            }
+                          } catch (error) {
+                            alert('Error: ' + error.message);
+                          }
+                        }"
+                        class="flex-1 px-3 py-2 bg-[#16a34a] text-white rounded text-sm font-medium hover:bg-[#128a3d] transition-colors"
+                      >
+                        <i class="ri-check-line mr-1"></i>Save
+                      </button>
+                      <button
+                        @click="address.editing = false"
+                        class="flex-1 px-3 py-2 bg-gray-300 text-gray-800 rounded text-sm font-medium hover:bg-gray-400 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
+          <button @click="profileModalOpen = false" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

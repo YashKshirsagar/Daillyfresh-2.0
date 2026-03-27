@@ -1,0 +1,95 @@
+    <!-- ── Profile Modal ── -->
+    <div
+      x-show="profileModalOpen"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0"
+      x-transition:enter-end="opacity-100"
+      class="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 p-4"
+      @click.away="profileModalOpen = false"
+    >
+      <div
+        x-show="profileModalOpen"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+        @click.stop
+        class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+      >
+        <!-- Modal Header -->
+        <div class="sticky top-0 z-10 border-b border-gray-200 bg-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 class="text-2xl font-bold text-[#0a2f15]">My Profile</h2>
+          <button @click="profileModalOpen = false" class="text-gray-500 hover:text-gray-700">
+            <i class="ri-close-line text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="p-6">
+          <!-- Profile Info -->
+          <div class="space-y-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold text-gray-800">Personal Information</h3>
+              <button
+                @click="profileModalOpen = false; setTimeout(() => { window.location.href = '{% url \"login\" %}'; }, 100)"
+                class="px-4 py-2 bg-[#16a34a] text-white rounded-lg text-sm font-medium hover:bg-[#128a3d] transition-colors"
+              >
+                <i class="ri-refresh-line mr-2"></i>Refresh
+              </button>
+            </div>
+
+            <div x-show="profileUser" class="grid md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Username</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.username || '-'"></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Email</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.email || '-'"></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">First Name</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.first_name || 'Not provided'"></p>
+              </div>
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="text-sm text-gray-600">Last Name</p>
+                <p class="text-lg font-semibold text-gray-900" x-text="profileUser?.last_name || 'Not provided'"></p>
+              </div>
+            </div>
+
+            <div x-show="!profileUser" class="text-center py-8 text-gray-600">
+              <i class="ri-loader-4-line text-3xl animate-spin text-[#16a34a] mb-2"></i>
+              <p>Loading profile...</p>
+            </div>
+          </div>
+
+          <!-- Addresses Section -->
+          <div x-show="profileUser && profileUser.addresses" class="mt-8 pt-8 border-t border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Delivery Addresses</h3>
+            <div class="space-y-3">
+              <template x-for="address in profileUser?.addresses || []" :key="address.id">
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-[#16a34a] transition-all">
+                  <div class="flex items-start justify-between">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h4 class="font-semibold text-gray-900" x-text="address.full_name"></h4>
+                        <span x-show="address.is_default" class="px-2 py-1 bg-[#dcfce7] text-[#16a34a] text-xs font-semibold rounded">Default</span>
+                      </div>
+                      <p class="text-sm text-gray-600 mt-1" x-text="address.phone_number"></p>
+                      <p class="text-sm text-gray-600" x-text="address.street_address"></p>
+                      <p class="text-sm text-gray-600" x-text="`${address.city}, ${address.state} ${address.pincode}`"></p>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex justify-end gap-3 rounded-b-2xl">
+          <button @click="profileModalOpen = false" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-medium hover:bg-gray-400 transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
