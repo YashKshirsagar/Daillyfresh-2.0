@@ -5,7 +5,8 @@ from core.views import (
     cart_page, add_address, place_order,
     apply_affiliate_coupon, remove_coupon, apply_coupon,
     terms_and_conditions, refund_policy,
-    get_user_profile, update_user_profile, update_address, delete_address
+    get_user_profile, update_user_profile, update_address, delete_address,
+    my_orders, get_user_orders, repeat_order
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -25,6 +26,11 @@ urlpatterns = [
     path('api/profile/update/', update_user_profile, name='update_user_profile'),
     path('api/address/update/', update_address, name='update_address'),
     path('api/address/delete/', delete_address, name='delete_address'),
+
+    # Orders URLs
+    path('my-orders/', my_orders, name='my_orders'),
+    path('api/orders/', get_user_orders, name='get_user_orders'),
+    path('api/repeat-order/', repeat_order, name='repeat_order'),
 
     # Cart & Checkout URLs
     path('cart/', cart_page, name='cart_page'),
