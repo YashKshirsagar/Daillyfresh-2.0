@@ -2,7 +2,7 @@
 
 <section
   id="home"
-  class="relative w-full h-[65vh] md:h-[75vh] lg:h-screen overflow-hidden"
+  class="hero-section relative"
   x-data="{
     activeSlide: {{ slides.0.id }},
     slides: [
@@ -37,7 +37,7 @@
       x-transition:leave="transition transform duration-1000 ease-in-out"
       x-transition:leave-start="opacity-100 scale-100"
       x-transition:leave-end="opacity-0 scale-100"
-      class="absolute inset-0 w-full h-full bg-cover bg-[center_top] md:bg-center"
+      class="slide-bg"
       :style="`background-image: url('${slide.image}');`"
     >
       {% comment %} <div
