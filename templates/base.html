@@ -536,7 +536,7 @@
                 <button @click="profileOpen = false; profileModalOpen = true; fetch('/api/profile/').then(r => r.json()).then(data => profileUser = data)" class="dropdown-link w-full text-left"
                   ><i class="ri-user-line"></i> My Profile</button
                 >
-                <a href="#" class="dropdown-link"
+                <a href="{% url 'my_orders' %}" class="dropdown-link" @click="profileOpen = false"
                   ><i class="ri-shopping-bag-line"></i> My Orders</a
                 >
                 <a href="{% url 'logout' %}" class="dropdown-link logout"
@@ -664,7 +664,7 @@
           ></i
           >My Profile
         </button>
-        <a href="#" class="mobile-link">
+        <a href="{% url 'my_orders' %}" @click="mobileMenuOpen = false" class="mobile-link">
           <i
             class="ri-shopping-bag-line"
             style="color: #16a34a; margin-right: 12px; font-size: 1.1rem"

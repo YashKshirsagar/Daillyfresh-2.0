@@ -342,6 +342,99 @@ def refund_policy(request):
     return render(request, 'refund-policy.html')
 
 
+# --- Orders Views ---
+@login_required(login_url='login')
+def my_orders(request):
+    """Display user's orders"""
+    orders = Order.objects.filter(user=request.user)
+    return render(request, 'orders.html', {'orders': orders})
+
+
+@login_required(login_url='login')
+def get_user_orders(request):
+    """AJAX endpoint to fetch user orders"""
+    orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product')
+    
+    orders_data = []
+    for order in orders:
+        items_data = []
+        for item in order.items.all():
+            items_data.append({
+                'id': item.id,
+                'product_name': item.product.name if item.product else 'Deleted Product',
+                'product_id': item.product.id if item.product else None,
+                'quantity': item.quantity,
+                'price': float(item.price),
+                'total': float(item.get_cost()),
+            })
+        
+        orders_data.append({
+            'id': order.id,
+            'status': order.status,
+            'created_at': order.created_at.strftime('%B %d, %Y'),
+            'created_at_iso': order.created_at.isoformat(),
+            'subtotal': float(order.subtotal),
+            'delivery_fee': float(order.delivery_fee),
+            'discount_amount': float(order.discount_amount),
+            'total_amount': float(order.total_amount),
+            'coupon_code': order.coupon.code if order.coupon else None,
+            'items': items_data,
+            'shipping_address': {
+                'full_name': order.shipping_address.full_name if order.shipping_address else 'N/A',
+                'phone': order.shipping_address.phone_number if order.shipping_address else 'N/A',
+                'address': order.shipping_address.street_address if order.shipping_address else 'N/A',
+                'city': order.shipping_address.city if order.shipping_address else 'N/A',
+            } if order.shipping_address else None
+        })
+    
+    return JsonResponse({'orders': orders_data})
+
+
+@login_required(login_url='login')
+def repeat_order(request):
+    """Repeat a previous order"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
+    
+    try:
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        
+        # Get the original order
+        original_order = Order.objects.get(id=order_id, user=request.user)
+        
+        # Create new order with same items
+        new_order = Order.objects.create(
+            user=request.user,
+            shipping_address=original_order.shipping_address,
+            subtotal=original_order.subtotal,
+            delivery_fee=original_order.delivery_fee,
+            coupon=original_order.coupon,
+            discount_amount=original_order.discount_amount,
+            total_amount=original_order.total_amount,
+            status='Pending'
+        )
+        
+        # Copy order items
+        for item in original_order.items.all():
+            OrderItem.objects.create(
+                order=new_order,
+                product=item.product,
+                price=item.price,
+                quantity=item.quantity
+            )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Order repeated successfully!',
+            'order_id': new_order.id
+        })
+    except Order.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Order not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
 # --- Profile Views ---
 @login_required(login_url='login')
 def get_user_profile(request):
