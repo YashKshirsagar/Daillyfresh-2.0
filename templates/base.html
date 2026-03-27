@@ -381,13 +381,17 @@
           height: 7rem; /* h-22 */
         }
       }
+      /* ── Hero Section - Responsive by Breakpoint ── */
       .hero-section {
         width: 100%;
         overflow: hidden;
         margin-top: 80px;
-        height: 55vw;
-        max-height: 90vh;
-        min-height: 200px;
+        position: relative;
+        /* Mobile: Aspect ratio 16:9 for banner images - no extra space */
+        height: auto;
+        aspect-ratio: 16 / 9;
+        min-height: 280px;
+        max-height: 450px;
       }
 
       .slide-bg {
@@ -395,22 +399,52 @@
         inset: 0;
         width: 100%;
         height: 100%;
-        background-size: cover;
-        /* background-position: right center; show right side on mobile */
+        background-size: contain;
+        background-position: center;
         background-repeat: no-repeat;
+        background-color: #f9fafb;
+        background-attachment: scroll;
       }
 
+      /* ── Tablet (small to medium) ── */
       @media (min-width: 640px) {
+        .hero-section {
+          aspect-ratio: 16 / 9;
+          height: auto;
+          min-height: 360px;
+          max-height: 600px;
+        }
+        
         .slide-bg {
-          /* background-position: center center; center on larger screens */
+          background-size: cover;
+          background-position: center center;
+          background-attachment: fixed;
+          background-color: transparent;
         }
       }
 
-      @media (min-width: 1080px) {
+      /* ── Small Desktop ── */
+      @media (min-width: 1024px) {
         .hero-section {
           margin-top: 90px;
-          /* height: calc(100vh - 90px); */
-          max-height: none;
+          aspect-ratio: auto;
+          height: calc(100vh - 90px);
+          min-height: 550px;
+          max-height: 100vh;
+        }
+
+        .slide-bg {
+          background-size: cover;
+        }        .slide-bg {
+          background-attachment: fixed;
+        }
+      }
+
+      /* ── Large Desktop ── */
+      @media (min-width: 1280px) {
+        .hero-section {
+          height: calc(100vh - 90px);
+          min-height: 600px;
         }
       }
     </style>
