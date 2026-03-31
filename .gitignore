@@ -136,4 +136,4 @@ static_src/node_modules/
 
 # Custom
 media/
-static/
+static/staticfiles/
