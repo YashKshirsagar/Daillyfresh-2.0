@@ -385,8 +385,8 @@
         width: 100%;
         overflow: hidden;
         margin-top: 80px;
-        height: 55vw;
-        max-height: 90vh;
+        height: auto;
+        aspect-ratio: 16 / 9;
         min-height: 200px;
       }
 
@@ -409,8 +409,9 @@
       @media (min-width: 1080px) {
         .hero-section {
           margin-top: 90px;
-          /* height: calc(100vh - 90px); */
-          max-height: none;
+          aspect-ratio: unset;
+          height: calc(100vh - 90px);
+          max-height: calc(100vh - 90px);
         }
       }
     </style>
