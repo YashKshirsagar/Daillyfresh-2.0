@@ -459,7 +459,7 @@
                 <div 
                     x-show="selectedCombo.badge"
                     :style="`background-color: ${selectedCombo.badge_color || '#FFC107'}; color: ${selectedCombo.badge_text_color || '#0a2f15'}`"
-                    class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm"
+                    class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm z-10"
                     x-text="selectedCombo.badge"
                 ></div>
                 <img :src="selectedCombo.image" :alt="selectedCombo.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
@@ -530,7 +530,7 @@
                 <div 
                     x-show="selectedProduct.badge"
                     :style="`background-color: ${selectedProduct.badge_color || '#FFC107'}; color: ${selectedProduct.badge_text_color || '#0a2f15'}`"
-                    class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm"
+                    class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm z-10"
                     x-text="selectedProduct.badge"
                 ></div>
                 <img :src="selectedProduct.image" :alt="selectedProduct.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
