@@ -240,7 +240,9 @@
             reviews: {{ product.reviews_count }},
             badge: '{{ product.badge|default:""|escapejs }}',
             badge_color: '{{ product.badge_color|default:""|escapejs }}',
-            badge_text_color: '{{ product.badge_text_color|default:""|escapejs }}'
+            badge_text_color: '{{ product.badge_text_color|default:""|escapejs }}',
+            modal_image: '{% if product.modal_image %}{{ product.modal_image.url }}{% else %}{{ product.image.url }}{% endif %}',
+            modal_description: '{{ product.modal_description|default:product.description|escapejs }}'
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ]
@@ -324,7 +326,9 @@
             reviews: {{ combo.reviews_count }},
             badge: '{{ combo.badge|default:""|escapejs }}',
             badge_color: '{{ combo.badge_color|default:""|escapejs }}',
-            badge_text_color: '{{ combo.badge_text_color|default:""|escapejs }}'
+            badge_text_color: '{{ combo.badge_text_color|default:""|escapejs }}',
+            modal_image: '{% if combo.modal_image %}{{ combo.modal_image.url }}{% else %}{{ combo.image.url }}{% endif %}',
+            modal_description: '{{ combo.modal_description|default:combo.description|escapejs }}'
         }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ]
@@ -417,7 +421,7 @@
                     class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm z-10"
                     x-text="selectedCombo.badge"
                 ></div>
-                <img :src="selectedCombo.image" :alt="selectedCombo.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
+                <img :src="selectedCombo.modal_image" :alt="selectedCombo.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
             </div>
 
             <div class="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
@@ -441,7 +445,7 @@
                     <span class="text-lg text-gray-400 mb-1" x-text="`Qty: ${selectedCombo.unit}`"></span>
                 </div>
 
-                <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedCombo.description"></p>
+                <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedCombo.modal_description"></p>
 
                 <div class="flex gap-4">
                     <button @click="$store.cart.add({id: 'combo-' + selectedCombo.id, name: selectedCombo.name, price: selectedCombo.current_price.replace('₹', ''), image: selectedCombo.image, unit: selectedCombo.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg flex items-center justify-center gap-2">
@@ -489,7 +493,7 @@
                     class="absolute top-6 left-6 text-sm font-bold px-4 py-1 rounded-full shadow-sm z-10"
                     x-text="selectedProduct.badge"
                 ></div>
-                <img :src="selectedProduct.image" :alt="selectedProduct.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
+                <img :src="selectedProduct.modal_image" :alt="selectedProduct.name" class="w-full max-w-xs object-contain drop-shadow-xl rounded-xl">
             </div>
 
             <div class="w-full md:w-1/2 p-8 md:p-12 overflow-y-auto">
@@ -513,7 +517,7 @@
                     <span class="text-lg text-gray-400 mb-1" x-text="`Qty: ${selectedProduct.unit}`"></span>
                 </div>
 
-                <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedProduct.description + ' Sourced directly from healthy, well-cared cattle. No preservatives, no adulteration. Pure freshness guaranteed.'"></p>
+                <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedProduct.modal_description"></p>
 
                 <div class="flex gap-4">
                     <button @click="$store.cart.add({id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.current_price.replace('₹', ''), image: selectedProduct.image, unit: selectedProduct.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
