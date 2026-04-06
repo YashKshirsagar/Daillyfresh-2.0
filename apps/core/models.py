@@ -10,8 +10,8 @@ if 'cloudinary_storage' in settings.INSTALLED_APPS:
     from cloudinary.models import CloudinaryField
     def ImageField(upload_to='', **kwargs):
         # Pass through blank, null, help_text, etc. so admin labels/fields stay correct
-        allowed = {k: v for k, v in kwargs.items() if k in ('blank', 'null', 'default', 'help_text')}
-        return CloudinaryField('image', folder=upload_to.strip('/'), **allowed)
+        allowed = {k: v for k, v in kwargs.items() if k in ('blank', 'null', 'default', 'help_text', 'verbose_name')}
+        return CloudinaryField(folder=upload_to.strip('/'), **allowed)
 else:
     def ImageField(upload_to='', **kwargs):
         return models.ImageField(upload_to=upload_to, **kwargs)
