@@ -357,7 +357,11 @@ def get_user_orders(request):
     orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product')
     
     orders_data = []
-    for order in orders:
+    # Count total orders for this user to assign user-specific order numbers
+    total_user_orders = orders.count()
+    for idx, order in enumerate(orders):
+        # Orders are newest-first, so the first item gets the highest number
+        user_order_number = total_user_orders - idx
         items_data = []
         for item in order.items.all():
             items_data.append({
@@ -371,6 +375,7 @@ def get_user_orders(request):
         
         orders_data.append({
             'id': order.id,
+            'user_order_number': user_order_number,
             'status': order.status,
             'created_at': order.created_at.strftime('%B %d, %Y'),
             'created_at_iso': order.created_at.isoformat(),
