@@ -97,7 +97,7 @@ class PartnerLogo(models.Model):
 class Testimonial(models.Model):
     name = models.CharField(max_length=100)
     occupation = models.CharField(max_length=150)
-    feedback = models.TextField()
+    feedback = models.TextField(max_length=300, help_text="Max 300 characters (~50 words)")
     image = ImageField(upload_to='testimonials/')
     stars = models.PositiveSmallIntegerField(default=5, choices=[(i, i) for i in range(1, 6)])
     is_dark_card = models.BooleanField(default=False, help_text="Dark green background card")
