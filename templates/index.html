@@ -291,11 +291,9 @@
                             
                             <div class="flex items-center gap-1.5">
                                 <div class="flex text-[#F59E0B] text-[11px] gap-0.5">
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
+                                    <template x-for="s in 5">
+                                        <i :class="s <= Math.floor(product.rating) ? 'ri-star-fill' : (s === Math.ceil(product.rating) && product.rating % 1 >= 0.25) ? 'ri-star-half-fill' : 'ri-star-line'"></i>
+                                    </template>
                                 </div>
                                 <span class="text-[10px] md:text-xs font-semibold text-gray-600" x-text="`${product.reviews} reviews`"></span>
                             </div>
@@ -373,11 +371,9 @@
                             </div>
                             <div class="flex items-center gap-1.5">
                                 <div class="flex text-[#F59E0B] text-[11px] gap-0.5">
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
-                                    <i class="ri-star-fill"></i>
+                                    <template x-for="s in 5">
+                                        <i :class="s <= Math.floor(combo.rating) ? 'ri-star-fill' : (s === Math.ceil(combo.rating) && combo.rating % 1 >= 0.25) ? 'ri-star-half-fill' : 'ri-star-line'"></i>
+                                    </template>
                                 </div>
                                 <span class="text-[10px] md:text-xs font-semibold text-gray-600" x-text="`${combo.reviews} reviews`"></span>
                             </div>
@@ -430,11 +426,9 @@
                 
                 <div class="flex items-center gap-2 mb-6">
                     <div class="flex text-[#FFC107] text-lg">
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-half-fill"></i>
+                        <template x-for="s in 5">
+                            <i :class="s <= Math.floor(selectedCombo.rating) ? 'ri-star-fill' : (s === Math.ceil(selectedCombo.rating) && selectedCombo.rating % 1 >= 0.25) ? 'ri-star-half-fill' : 'ri-star-line'"></i>
+                        </template>
                     </div>
                     <span class="text-gray-500 text-sm" x-text="`(${selectedCombo.reviews} Reviews)`"></span>
                 </div>
@@ -450,9 +444,6 @@
                 <div class="flex gap-4">
                     <button @click="$store.cart.add({id: 'combo-' + selectedCombo.id, name: selectedCombo.name, price: selectedCombo.current_price.replace('₹', ''), image: selectedCombo.image, unit: selectedCombo.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg flex items-center justify-center gap-2">
                         <i class="ri-shopping-cart-2-fill"></i> Add to Cart
-                    </button>
-                    <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
-                        <i class="ri-heart-line text-xl"></i>
                     </button>
                 </div>
             </div>
@@ -502,11 +493,9 @@
                 
                 <div class="flex items-center gap-2 mb-6">
                     <div class="flex text-[#FFC107] text-lg">
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-fill"></i>
-                        <i class="ri-star-half-fill"></i>
+                        <template x-for="s in 5">
+                            <i :class="s <= Math.floor(selectedProduct.rating) ? 'ri-star-fill' : (s === Math.ceil(selectedProduct.rating) && selectedProduct.rating % 1 >= 0.25) ? 'ri-star-half-fill' : 'ri-star-line'"></i>
+                        </template>
                     </div>
                     <span class="text-gray-500 text-sm" x-text="`(${selectedProduct.reviews} Reviews)`"></span>
                 </div>
@@ -522,9 +511,6 @@
                 <div class="flex gap-4">
                     <button @click="$store.cart.add({id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.current_price.replace('₹', ''), image: selectedProduct.image, unit: selectedProduct.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
                         <i class="ri-shopping-cart-2-fill"></i> Add to Cart
-                    </button>
-                    <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
-                        <i class="ri-heart-line text-xl"></i>
                     </button>
                 </div>
             </div>
