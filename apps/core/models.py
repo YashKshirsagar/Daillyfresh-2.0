@@ -33,7 +33,8 @@ class HomeHero(models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="MRP / original price (shown as strikethrough)")
+    current_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Selling price (shown as current price)")
     unit = models.CharField(max_length=50, help_text="e.g., 1000 ml, 500 gm")
     image = ImageField(upload_to='products/')
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
@@ -56,7 +57,8 @@ class Product(models.Model):
 class Combo(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="MRP / original price (shown as strikethrough)")
+    current_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Selling price (shown as current price)")
     unit = models.CharField(max_length=50, help_text="e.g., 1 Pack, 2 Bottles")
     image = ImageField(upload_to='combos/')
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)

@@ -154,4 +154,4 @@ class TestimonialAdmin(admin.ModelAdmin):
 
 @admin.register(Combo)
 class ComboAdmin(admin.ModelAdmin):
-    list_display = ['name', 'price', 'unit', 'badge']
+    list_display = ['name', 'current_price', 'original_price', 'unit', 'badge']
