@@ -102,6 +102,22 @@ class Testimonial(models.Model):
     def __str__(self):
         return f"{self.name} — {self.occupation}"
 
+# --- Process Step Model ---
+class ProcessStep(models.Model):
+    title_line1 = models.CharField(max_length=200, help_text="First line of the title, e.g. 'Sourced from Healthy,'")
+    title_line2 = models.CharField(max_length=200, blank=True, default='', help_text="Second line of the title, e.g. 'Well-Cared Cattle'")
+    image = ImageField(upload_to='process/')
+    order = models.PositiveIntegerField(default=0, help_text="Display order (lower = first)")
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Process Step'
+        verbose_name_plural = 'Process Steps'
+
+    def __str__(self):
+        return self.title_line1
+
+
 # --- Address Model ---
 class Address(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
