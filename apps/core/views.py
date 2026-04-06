@@ -226,7 +226,7 @@ def place_order(request):
             for item in cart_items:
                 product = Product.objects.get(id=item['id'])
                 qty = int(item['quantity'])
-                actual_subtotal += product.price * qty
+                actual_subtotal += product.current_price * qty
                 order_products.append((product, qty))
 
             # Delivery fee
@@ -270,7 +270,7 @@ def place_order(request):
                 OrderItem.objects.create(
                     order=order,
                     product=product,
-                    price=product.price,
+                    price=product.current_price,
                     quantity=qty,
                 )
 

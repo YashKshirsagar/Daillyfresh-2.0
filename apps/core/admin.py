@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.conf import settings
 from .models import HomeHero, Product, Address, Order, OrderItem, Coupon, PartnerLogo, Testimonial, Combo, ProcessStep
 
@@ -59,7 +60,7 @@ class CouponAdmin(admin.ModelAdmin):
         Sirf tab show hoga jab is_affiliate=True ho.
         """
         if not obj.is_affiliate or not obj.code:
-            return format_html(
+            return mark_safe(
                 '<span style="color:#9ca3af; font-size:0.85rem;">'
                 'Is Affiliate checkbox ON karo aur save karo — URL yahan dikhega.'
                 '</span>'
