@@ -1,13 +1,21 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.conf import settings
-from .models import HomeHero, Product, Address, Order, OrderItem, Coupon, PartnerLogo, Testimonial, Combo
+from .models import HomeHero, Product, Address, Order, OrderItem, Coupon, PartnerLogo, Testimonial, Combo, ProcessStep
 
 admin.site.register(HomeHero)
 admin.site.register(Product)
 admin.site.register(Address)
 admin.site.register(Order)
 admin.site.register(OrderItem)
+
+
+@admin.register(ProcessStep)
+class ProcessStepAdmin(admin.ModelAdmin):
+    list_display = ['order', 'title_line1', 'title_line2']
+    list_display_links = ['title_line1']
+    list_editable = ['order']
+    ordering = ['order']
 
 
 @admin.register(Coupon)
@@ -146,4 +154,4 @@ class TestimonialAdmin(admin.ModelAdmin):
 
 @admin.register(Combo)
 class ComboAdmin(admin.ModelAdmin):
-    list_display = ['name', 'price', 'unit', 'badge']
+    list_display = ['name', 'current_price', 'original_price', 'unit', 'badge']

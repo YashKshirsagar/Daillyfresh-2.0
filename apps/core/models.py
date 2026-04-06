@@ -33,9 +33,12 @@ class HomeHero(models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="MRP / original price (shown as strikethrough)")
+    current_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Selling price (shown as current price)")
     unit = models.CharField(max_length=50, help_text="e.g., 1000 ml, 500 gm")
     image = ImageField(upload_to='products/')
+    modal_image = ImageField(upload_to='products/modal/', blank=True, null=True, help_text="Image shown in quick-view modal (leave blank to use main image)")
+    modal_description = models.TextField(blank=True, default='', help_text="Detailed description shown in quick-view modal (leave blank to use main description)")
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     # is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -56,9 +59,12 @@ class Product(models.Model):
 class Combo(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="MRP / original price (shown as strikethrough)")
+    current_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Selling price (shown as current price)")
     unit = models.CharField(max_length=50, help_text="e.g., 1 Pack, 2 Bottles")
     image = ImageField(upload_to='combos/')
+    modal_image = ImageField(upload_to='combos/modal/', blank=True, null=True, help_text="Image shown in quick-view modal (leave blank to use main image)")
+    modal_description = models.TextField(blank=True, default='', help_text="Detailed description shown in quick-view modal (leave blank to use main description)")
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.0)
     reviews_count = models.IntegerField(default=5)
     badge = models.CharField(max_length=50, blank=True, null=True)
@@ -101,6 +107,22 @@ class Testimonial(models.Model):
 
     def __str__(self):
         return f"{self.name} — {self.occupation}"
+
+# --- Process Step Model ---
+class ProcessStep(models.Model):
+    title_line1 = models.CharField(max_length=200, help_text="First line of the title, e.g. 'Sourced from Healthy,'")
+    title_line2 = models.CharField(max_length=200, blank=True, default='', help_text="Second line of the title, e.g. 'Well-Cared Cattle'")
+    image = ImageField(upload_to='process/')
+    order = models.PositiveIntegerField(default=0, help_text="Display order (lower = first)")
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Process Step'
+        verbose_name_plural = 'Process Steps'
+
+    def __str__(self):
+        return self.title_line1
+
 
 # --- Address Model ---
 class Address(models.Model):

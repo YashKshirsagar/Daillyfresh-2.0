@@ -429,7 +429,7 @@
     {% csrf_token %}
     <!-- ══ HEADER ══ -->
     <header
-      x-data="{ mobileMenuOpen: false}"
+      x-data="{ mobileMenuOpen: false }"
       class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
     >
       <div class="site-header w-full">
@@ -451,37 +451,31 @@
               <a
                 href="/#home"
                 class="nav-link"
-                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >Home</a
               >
               <a
                 href="/#about"
                 class="nav-link"
-                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >About Us</a
               >
               <a
                 href="/#process"
                 class="nav-link"
-                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >Our Process</a
               >
               <a
                 href="/#products"
                 class="nav-link"
-                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >Products</a
               >
               <a
                 href="/#combos"
                 class="nav-link"
-                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >Combos</a
               >
               <a
                 href="#contact"
                 class="nav-link"
-                :class="(!scrolled && isHome) ? 'nav-link-white' : ''"
                 >Contact</a
               >
             </nav>
@@ -493,7 +487,6 @@
             <a
               href="{% url 'cart_page' %}"
               class="icon-btn"
-              :class="(!scrolled && isHome) ? 'icon-btn-white' : ''"
             >
               <i class="ri-shopping-cart-2-line"></i>
               <span
@@ -550,7 +543,6 @@
             <a
               href="{% url 'login' %}"
               class="nav-desktop icon-btn"
-              :class="(!scrolled && isHome) ? 'icon-btn-white' : ''"
               title="Login / Sign Up"
             >
               <i class="ri-user-line"></i>
@@ -560,8 +552,7 @@
             <!-- Hamburger (Mobile only) -->
             <button
               @click="mobileMenuOpen = !mobileMenuOpen"
-              class="nav-hamburger w-9 h-9 rounded-full flex items-center justify-center transition-colors"
-              :class="(!scrolled && isHome) ? 'text-white hover:bg-white/15' : 'text-[#0a2f15] hover:bg-gray-100'"
+              class="nav-hamburger w-9 h-9 rounded-full flex items-center justify-center transition-colors text-[#0a2f15] hover:bg-gray-100"
             >
               <i
                 :class="mobileMenuOpen ? 'ri-close-line text-xl' : 'ri-menu-3-line text-xl'"

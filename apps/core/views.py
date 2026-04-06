@@ -18,7 +18,8 @@ def home(request):
     partner_logos = PartnerLogo.objects.all()
     testimonials = Testimonial.objects.filter(is_active=True)
     combos = Combo.objects.all()
-    return render(request, 'index.html', {'slides': slides, 'products': products, 'partner_logos': partner_logos, 'testimonials': testimonials, 'combos': combos})
+    process_steps = ProcessStep.objects.all()
+    return render(request, 'index.html', {'slides': slides, 'products': products, 'partner_logos': partner_logos, 'testimonials': testimonials, 'combos': combos, 'process_steps': process_steps})
 
 
 # --- Authentication Views ---
