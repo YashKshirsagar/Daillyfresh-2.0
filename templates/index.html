@@ -555,7 +555,7 @@
     {% endif %}
 </section>
 
-<section id="testimonials" class="py-16 md:py-20 bg-white relative">
+<section id="testimonials" class="py-16 md:py-20 bg-white relative overflow-hidden">
   <div class="container mx-auto px-6">
     <div class="text-center mb-12 md:mb-16 animate-fade-in-up">
       <span class="text-[#16a34a] font-bold uppercase tracking-wider">Testimonials</span>
@@ -563,18 +563,96 @@
         What our client say about us
       </h2>
     </div>
+  </div>
 
+  {% if testimonials|length > 2 %}
+  {# ── Sliding marquee (more than 2 cards) ── #}
+  <div class="relative w-full">
+    <div class="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+    <div class="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+
+    <div class="flex animate-testimonial-marquee py-2 hover:[animation-play-state:paused]">
+      <div class="flex items-stretch shrink-0" style="gap: 2.5rem; padding-right: 2.5rem;">
+        {% for t in testimonials %}
+        <div class="testimonial-slide-card shrink-0 {% if t.is_dark_card %}bg-[#0a2f15]{% else %}bg-white border-2 border-[#16a34a]/20{% endif %} p-8 rounded-3xl shadow-xl relative animate-fade-in-up">
+
+          <i class="ri-double-quotes-l text-5xl {% if t.is_dark_card %}text-[#84cc16]/20{% else %}text-[#16a34a]/20{% endif %} absolute top-6 right-8"></i>
+
+          <p style="flex: 1 1 0;" class="{% if t.is_dark_card %}text-green-100/90{% else %}text-gray-600{% endif %} italic text-lg leading-relaxed mb-8">
+            "{{ t.feedback }}"
+          </p>
+
+          <div class="flex items-center gap-4" style="margin-top: auto;">
+            <div class="w-16 h-16 {% if t.is_dark_card %}bg-[#16a34a]{% else %}bg-gray-200{% endif %} rounded-full overflow-hidden shrink-0">
+              <img src="{{ t.image.url }}" alt="{{ t.name }}" class="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h4 class="text-xl font-bold {% if t.is_dark_card %}text-white{% else %}text-[#0a2f15]{% endif %}">{{ t.name }}</h4>
+              <p class="{% if t.is_dark_card %}text-[#84cc16]{% else %}text-[#16a34a]{% endif %} font-medium text-sm">{{ t.occupation }}</p>
+
+              <div class="flex gap-1 text-[#FFC107] mt-1 text-sm">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= t.stars %}
+                    <i class="ri-star-fill"></i>
+                  {% else %}
+                    <i class="ri-star-line"></i>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="flex items-stretch shrink-0" style="gap: 2.5rem; padding-right: 2.5rem;" aria-hidden="true">
+        {% for t in testimonials %}
+        <div class="testimonial-slide-card shrink-0 {% if t.is_dark_card %}bg-[#0a2f15]{% else %}bg-white border-2 border-[#16a34a]/20{% endif %} p-8 rounded-3xl shadow-xl relative">
+
+          <i class="ri-double-quotes-l text-5xl {% if t.is_dark_card %}text-[#84cc16]/20{% else %}text-[#16a34a]/20{% endif %} absolute top-6 right-8"></i>
+
+          <p style="flex: 1 1 0;" class="{% if t.is_dark_card %}text-green-100/90{% else %}text-gray-600{% endif %} italic text-lg leading-relaxed mb-8">
+            "{{ t.feedback }}"
+          </p>
+
+          <div class="flex items-center gap-4" style="margin-top: auto;">
+            <div class="w-16 h-16 {% if t.is_dark_card %}bg-[#16a34a]{% else %}bg-gray-200{% endif %} rounded-full overflow-hidden shrink-0">
+              <img src="{{ t.image.url }}" alt="{{ t.name }}" class="w-full h-full object-cover" />
+            </div>
+            <div>
+              <h4 class="text-xl font-bold {% if t.is_dark_card %}text-white{% else %}text-[#0a2f15]{% endif %}">{{ t.name }}</h4>
+              <p class="{% if t.is_dark_card %}text-[#84cc16]{% else %}text-[#16a34a]{% endif %} font-medium text-sm">{{ t.occupation }}</p>
+
+              <div class="flex gap-1 text-[#FFC107] mt-1 text-sm">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= t.stars %}
+                    <i class="ri-star-fill"></i>
+                  {% else %}
+                    <i class="ri-star-line"></i>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  {# ── Static grid (2 or fewer cards) ── #}
+  <div class="container mx-auto px-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-5xl mx-auto">
       {% for t in testimonials %}
-      <div class="{% if t.is_dark_card %}bg-[#0a2f15]{% else %}bg-white border-2 border-[#16a34a]/20{% endif %} p-8 rounded-3xl shadow-xl relative animate-fade-in-up">
+      <div class="{% if t.is_dark_card %}bg-[#0a2f15]{% else %}bg-white border-2 border-[#16a34a]/20{% endif %} p-8 rounded-3xl shadow-xl relative animate-fade-in-up" style="display: flex; flex-direction: column;">
 
         <i class="ri-double-quotes-l text-5xl {% if t.is_dark_card %}text-[#84cc16]/20{% else %}text-[#16a34a]/20{% endif %} absolute top-6 right-8"></i>
 
-        <p class="{% if t.is_dark_card %}text-green-100/90{% else %}text-gray-600{% endif %} italic text-lg leading-relaxed mb-8">
+        <p style="flex: 1 1 0;" class="{% if t.is_dark_card %}text-green-100/90{% else %}text-gray-600{% endif %} italic text-lg leading-relaxed mb-8">
           "{{ t.feedback }}"
         </p>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4" style="margin-top: auto;">
           <div class="w-16 h-16 {% if t.is_dark_card %}bg-[#16a34a]{% else %}bg-gray-200{% endif %} rounded-full overflow-hidden shrink-0">
             <img src="{{ t.image.url }}" alt="{{ t.name }}" class="w-full h-full object-cover" />
           </div>
@@ -597,6 +675,7 @@
       {% endfor %}
     </div>
   </div>
+  {% endif %}
 </section>
 
 <style>
@@ -623,6 +702,29 @@
   }
   @keyframes marquee {
     0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Testimonial slide card — match original 2-col grid sizing */
+  .testimonial-slide-card {
+    width: 85vw;
+    max-width: 488px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Testimonial marquee slider */
+  .animate-testimonial-marquee {
+    animation: testimonialMarquee 20s linear infinite;
+    will-change: transform;
+  }
+  @media (min-width: 1080px) {
+    .animate-testimonial-marquee {
+      animation: testimonialMarquee 35s linear infinite;
+    }
+  }
+  @keyframes testimonialMarquee {
+    0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
 </style>
