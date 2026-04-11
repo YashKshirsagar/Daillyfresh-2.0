@@ -1,5 +1,7 @@
+import uuid
+
 from django.db import models
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -15,6 +17,44 @@ if 'cloudinary_storage' in settings.INSTALLED_APPS:
 else:
     def ImageField(upload_to='', **kwargs):
         return models.ImageField(upload_to=upload_to, **kwargs)
+
+
+def _generate_customer_id():
+    """Generate a unique customer ID like DF-A1B2C3."""
+    return f"DF-{uuid.uuid4().hex[:6].upper()}"
+
+
+class Customer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer')
+    customer_id = models.CharField(
+        max_length=20, unique=True, editable=False, db_index=True,
+        help_text="Auto-generated unique Customer ID",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Customer'
+        verbose_name_plural = 'Customers'
+
+    def __str__(self):
+        return f"{self.customer_id} — {self.user.get_full_name() or self.user.username}"
+
+    def save(self, *args, **kwargs):
+        if not self.customer_id:
+            self.customer_id = _generate_customer_id()
+            # Ensure uniqueness
+            while Customer.objects.filter(customer_id=self.customer_id).exists():
+                self.customer_id = _generate_customer_id()
+        super().save(*args, **kwargs)
+
+
+@receiver(post_save, sender=User)
+def create_customer_profile(sender, instance, created, **kwargs):
+    """Auto-create a Customer profile whenever a new User is created."""
+    if created:
+        Customer.objects.get_or_create(user=instance)
+
 
 # Create your models here.
 class HomeHero(models.Model):
@@ -163,6 +203,7 @@ class Order(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     shipping_address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True)
     
     # Pricing
@@ -181,6 +222,12 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order #{self.id} - {self.user.username if self.user else 'Guest'}"
+
+    def save(self, *args, **kwargs):
+        # Auto-link order to customer profile
+        if self.user and not self.customer:
+            self.customer = getattr(self.user, 'customer', None)
+        super().save(*args, **kwargs)
 
 
 # --- Order Item Model ---
