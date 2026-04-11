@@ -355,6 +355,11 @@ def my_orders(request):
 def get_user_orders(request):
     """AJAX endpoint to fetch user orders"""
     orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product')
+
+    # Optional status filter
+    status = request.GET.get('status')
+    if status in ('Pending', 'Completed'):
+        orders = orders.filter(status=status)
     
     orders_data = []
     # Count total orders for this user to assign user-specific order numbers

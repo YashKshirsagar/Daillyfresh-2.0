@@ -22,10 +22,11 @@
   }
 
   .status-pending { background: #fef3c7; color: #92400e; }
-  .status-processing { background: #dbeafe; color: #1e40af; }
-  .status-out-for-delivery { background: #c7d2fe; color: #1f2937; }
-  .status-delivered { background: #dcfce7; color: #0a2f15; }
-  .status-cancelled { background: #fee2e2; color: #7f1d1d; }
+  .status-completed { background: #dcfce7; color: #0a2f15; }
+
+  .filter-btn { padding: 0.5rem 1.25rem; border-radius: 9999px; font-weight: 600; font-size: 0.875rem; border: 2px solid #e5e7eb; color: #6b7280; transition: all 0.2s; cursor: pointer; }
+  .filter-btn:hover { border-color: #16a34a; color: #16a34a; }
+  .filter-btn.active { background: #16a34a; color: white; border-color: #16a34a; }
 </style>
 
 <div class="bg-white" style="padding-top: 100px;">
@@ -42,12 +43,17 @@
         orders: [], 
         loading: true,
         showEmpty: false,
+        activeFilter: 'all',
         init() {
           this.loadOrders();
         },
         async loadOrders() {
           try {
-            const response = await fetch('/api/orders/');
+            let url = '/api/orders/';
+            if (this.activeFilter !== 'all') {
+              url += '?status=' + encodeURIComponent(this.activeFilter);
+            }
+            const response = await fetch(url);
             const data = await response.json();
             this.orders = data.orders;
             this.showEmpty = this.orders.length === 0;
@@ -56,6 +62,11 @@
             console.error('Error loading orders:', error);
             this.loading = false;
           }
+        },
+        setFilter(filter) {
+          this.activeFilter = filter;
+          this.loading = true;
+          this.loadOrders();
         },
         async repeatOrder(orderId) {
           if (!confirm('Repeat this order?')) return;
@@ -87,6 +98,28 @@
       }"
       x-init="init()"
     >
+      <!-- Filter Tabs -->
+      <div class="mb-8 flex flex-wrap gap-3">
+        <button
+          class="filter-btn"
+          :class="{ 'active': activeFilter === 'all' }"
+          @click="setFilter('all')">
+          All Orders
+        </button>
+        <button
+          class="filter-btn"
+          :class="{ 'active': activeFilter === 'Pending' }"
+          @click="setFilter('Pending')">
+          Pending
+        </button>
+        <button
+          class="filter-btn"
+          :class="{ 'active': activeFilter === 'Completed' }"
+          @click="setFilter('Completed')">
+          Completed
+        </button>
+      </div>
+
       <!-- Loading State -->
       <div x-show="loading" class="text-center py-16">
         <div class="inline-block">

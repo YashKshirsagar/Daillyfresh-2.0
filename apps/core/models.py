@@ -196,10 +196,7 @@ class Address(models.Model):
 class Order(models.Model):
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
-        ('Processing', 'Processing'),
-        ('Out for Delivery', 'Out for Delivery'),
-        ('Delivered', 'Delivered'),
-        ('Cancelled', 'Cancelled'),
+        ('Completed', 'Completed'),
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
