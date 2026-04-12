@@ -1,4 +1,5 @@
 import json
+import os
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
@@ -574,3 +575,61 @@ def delete_address(request):
         return JsonResponse({'success': False, 'message': 'Address not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ---------------------------------------------------------------
+# Quick Feedback View
+# ---------------------------------------------------------------
+
+@login_required(login_url='login')
+def submit_feedback(request):
+    """AJAX endpoint to submit quick feedback and email it to the site owner."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid request data.'}, status=400)
+
+    import re
+    from django.core.mail import send_mail
+    from django.conf import settings as django_settings
+
+    message = data.get('message', '').strip()
+
+    # Strip HTML tags for sanitization
+    message = re.sub(r'<[^>]+>', '', message)
+
+    # Validation
+    if not message:
+        return JsonResponse({'success': False, 'message': 'Feedback cannot be empty.'}, status=400)
+    if len(message) < 10:
+        return JsonResponse({'success': False, 'message': 'Feedback must be at least 10 characters.'}, status=400)
+    if len(message) > 500:
+        return JsonResponse({'success': False, 'message': 'Feedback must not exceed 500 characters.'}, status=400)
+
+    # Rate limiting: max 3 per user per hour
+    one_hour_ago = timezone.now() - timezone.timedelta(hours=1)
+    recent_count = Feedback.objects.filter(user=request.user, created_at__gte=one_hour_ago).count()
+    if recent_count >= 3:
+        return JsonResponse({'success': False, 'message': 'You can only submit 3 feedbacks per hour. Please try again later.'}, status=429)
+
+    # Save feedback
+    Feedback.objects.create(user=request.user, message=message)
+
+    # Send email
+    feedback_email = os.environ.get('FEEDBACK_EMAIL', '')
+    if feedback_email:
+        try:
+            send_mail(
+                subject=f"Quick Feedback from {request.user.get_full_name() or request.user.username}",
+                message=f"User: {request.user.username}\nEmail: {request.user.email}\n\nFeedback:\n{message}",
+                from_email=django_settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[feedback_email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass  # Don't fail the response if email sending fails
+
+    return JsonResponse({'success': True, 'message': 'Thanks for your feedback!'})

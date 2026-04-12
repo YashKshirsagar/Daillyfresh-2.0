@@ -276,3 +276,17 @@ class Coupon(models.Model):
             if self.max_uses is None or self.total_uses < self.max_uses:
                 return True
         return False
+
+
+class Feedback(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
+    message = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Feedback'
+        verbose_name_plural = 'Feedbacks'
+
+    def __str__(self):
+        return f"Feedback by {self.user.username} on {self.created_at:%Y-%m-%d %H:%M}"

@@ -17,3 +17,9 @@ DATABASES = {
     }
 }
 NPM_BIN_PATH = r"C:\nvm4w\nodejs\npm.cmd" 
+
+# Print emails to console instead of sending (for local dev)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Set FEEDBACK_EMAIL in env so the view can read it
+os.environ.setdefault('FEEDBACK_EMAIL', 'ykshirsagar554@gmail.com')
