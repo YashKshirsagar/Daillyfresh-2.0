@@ -1,14 +1,160 @@
 from django.contrib import admin
+from django.db import models as db_models
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.conf import settings
-from .models import HomeHero, Product, Address, Order, OrderItem, Coupon, PartnerLogo, Testimonial, Combo, ProcessStep
+from django.urls import reverse
+from .models import (
+    HomeHero, Product, Address, Order, OrderItem, Coupon,
+    PartnerLogo, Testimonial, Combo, ProcessStep, Customer,
+)
 
 admin.site.register(HomeHero)
 admin.site.register(Product)
-admin.site.register(Address)
-admin.site.register(Order)
-admin.site.register(OrderItem)
+
+
+# ─── Order Items inline (used inside OrderAdmin) ───
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ['product', 'price', 'quantity', 'item_total']
+    fields = ['product', 'quantity', 'price', 'item_total']
+
+    def item_total(self, obj):
+        return f"₹{obj.get_cost()}"
+    item_total.short_description = 'Total'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+# ─── Order Admin ───
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['id', 'customer_id_display', 'user', 'status', 'total_amount', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['id', 'user__username', 'user__email', 'customer__customer_id']
+    readonly_fields = [
+        'user', 'customer_link', 'shipping_address',
+        'subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount',
+        'created_at', 'updated_at',
+    ]
+    list_editable = ['status']
+    inlines = [OrderItemInline]
+
+    fieldsets = (
+        ('Customer', {
+            'fields': ('user', 'customer_link', 'shipping_address'),
+        }),
+        ('Pricing', {
+            'fields': ('subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount'),
+        }),
+        ('Status & Dates', {
+            'fields': ('status', 'created_at', 'updated_at'),
+        }),
+    )
+
+    def customer_id_display(self, obj):
+        if obj.customer:
+            url = reverse('admin:core_customer_change', args=[obj.customer.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.customer.customer_id)
+        return '-'
+    customer_id_display.short_description = 'Customer ID'
+
+    def customer_link(self, obj):
+        if obj.customer:
+            url = reverse('admin:core_customer_change', args=[obj.customer.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.customer)
+        return '-'
+    customer_link.short_description = 'Customer'
+
+
+# ─── Order inline (used inside CustomerAdmin) ───
+class OrderInline(admin.TabularInline):
+    model = Order
+    extra = 0
+    fields = ['order_link', 'status', 'total_amount', 'created_at']
+    readonly_fields = ['order_link', 'status', 'total_amount', 'created_at']
+    ordering = ['-created_at']
+    show_change_link = False
+
+    def order_link(self, obj):
+        url = reverse('admin:core_order_change', args=[obj.pk])
+        return format_html('<a href="{}">Order #{}</a>', url, obj.id)
+    order_link.short_description = 'Order'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+# ─── Customer Admin ───
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ['customer_id', 'full_name', 'email', 'total_orders', 'created_at']
+    search_fields = ['customer_id', 'user__username', 'user__first_name', 'user__last_name', 'user__email']
+    readonly_fields = [
+        'customer_id', 'username', 'full_name', 'email',
+        'date_joined', 'last_login', 'total_orders', 'total_spent',
+    ]
+    inlines = [OrderInline]
+
+    fieldsets = (
+        ('Customer ID', {
+            'fields': ('customer_id',),
+        }),
+        ('Profile Info', {
+            'fields': ('username', 'full_name', 'email', 'date_joined', 'last_login'),
+        }),
+        ('Order Summary', {
+            'fields': ('total_orders', 'total_spent'),
+        }),
+    )
+
+    def username(self, obj):
+        return obj.user.username
+    username.short_description = 'Username'
+
+    def full_name(self, obj):
+        return obj.user.get_full_name() or '-'
+    full_name.short_description = 'Full Name'
+
+    def email(self, obj):
+        return obj.user.email or '-'
+    email.short_description = 'Email'
+
+    def date_joined(self, obj):
+        return obj.user.date_joined
+    date_joined.short_description = 'Date Joined'
+
+    def last_login(self, obj):
+        return obj.user.last_login
+    last_login.short_description = 'Last Login'
+
+    def total_orders(self, obj):
+        return obj.orders.count()
+    total_orders.short_description = 'Total Orders'
+
+    def total_spent(self, obj):
+        total = obj.orders.aggregate(total=db_models.Sum('total_amount'))['total']
+        return f"₹{total or 0}"
+    total_spent.short_description = 'Total Spent'
+
+    def has_add_permission(self, request):
+        # Customers are auto-created via User signal
+        return False
+
+
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ['full_name', 'user', 'city', 'pincode', 'is_default']
+    search_fields = ['full_name', 'user__username', 'city', 'pincode']
+    list_filter = ['is_default', 'city']
 
 
 @admin.register(ProcessStep)
