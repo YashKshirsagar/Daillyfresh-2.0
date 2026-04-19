@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -7,9 +8,13 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from decimal import Decimal
 
 from .models import *
+
+logger = logging.getLogger(__name__)
 
 
 # --- Main Home View ---
@@ -284,6 +289,14 @@ def place_order(request):
 
             # Session cleanup
             request.session.pop('applied_coupon', None)
+
+            # Push order to Shiprocket
+            if getattr(settings, 'SHIPROCKET_ENABLED', False):
+                try:
+                    from core.shiprocket import shiprocket
+                    shiprocket.create_order(order)
+                except Exception as e:
+                    logger.error(f"Shiprocket push failed for Order #{order.id}: {e}")
 
             return JsonResponse({
                 'success': True,
@@ -640,5 +653,55 @@ def submit_feedback(request):
         except Exception as e:
             if django_settings.DEBUG:
                 return JsonResponse({'success': False, 'message': f'Email error: {e}'}, status=500)
+
+
+# ---------------------------------------------------------------
+# Shiprocket Webhook
+# ---------------------------------------------------------------
+
+@csrf_exempt
+def shiprocket_webhook(request):
+    """
+    Receive tracking updates from Shiprocket.
+    Shiprocket sends a POST with JSON body on every tracking event.
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "bad request"}, status=400)
+
+    sr_order_id = str(data.get("sr_order_id", ""))
+    awb = data.get("awb", "")
+    current_status = data.get("current_status", "")
+    courier_name = data.get("courier_name", "")
+
+    STATUS_MAP = {
+        "MANIFEST GENERATED": "Processing",
+        "PICKED UP": "Shipped",
+        "SHIPPED": "Shipped",
+        "IN TRANSIT": "In Transit",
+        "OUT FOR DELIVERY": "Out for Delivery",
+        "DELIVERED": "Delivered",
+        "RTO INITIATED": "RTO",
+        "RTO DELIVERED": "RTO",
+        "CANCELED": "Cancelled",
+    }
+
+    try:
+        order = Order.objects.get(shiprocket_order_id=sr_order_id)
+        order.awb_code = awb
+        order.courier_name = courier_name
+        new_status = STATUS_MAP.get(current_status)
+        if new_status:
+            order.status = new_status
+        order.save()
+        logger.info(f"Webhook updated Order #{order.id} → {current_status}")
+    except Order.DoesNotExist:
+        logger.warning(f"Webhook: No order found for sr_order_id={sr_order_id}")
+
+    return JsonResponse({"status": "ok"})
 
     return JsonResponse({'success': True, 'message': 'Thanks for your feedback!'})

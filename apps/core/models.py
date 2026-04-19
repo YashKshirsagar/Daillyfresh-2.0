@@ -102,6 +102,8 @@ class Product(models.Model):
     badge = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 'Best Seller', 'New Arrival'")
     badge_color = models.CharField(max_length=7, blank=True, null=True, help_text="Hex color e.g. #FFC107")
     badge_text_color = models.CharField(max_length=7, blank=True, null=True, help_text="Hex color e.g. #000000")
+    sku = models.CharField(max_length=100, blank=True, default='', help_text="Stock Keeping Unit code for Shiprocket")
+    weight = models.DecimalField(max_digits=6, decimal_places=2, default=0.5, help_text="Weight in KG")
     # updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
@@ -126,6 +128,8 @@ class Combo(models.Model):
     badge = models.CharField(max_length=50, blank=True, null=True)
     badge_color = models.CharField(max_length=7, blank=True, null=True)
     badge_text_color = models.CharField(max_length=7, blank=True, null=True)
+    sku = models.CharField(max_length=100, blank=True, default='', help_text="Stock Keeping Unit code for Shiprocket")
+    weight = models.DecimalField(max_digits=6, decimal_places=2, default=0.5, help_text="Weight in KG")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -210,7 +214,19 @@ class Address(models.Model):
 class Order(models.Model):
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
+        ('Processing', 'Processing'),
+        ('Shipped', 'Shipped'),
+        ('In Transit', 'In Transit'),
+        ('Out for Delivery', 'Out for Delivery'),
+        ('Delivered', 'Delivered'),
+        ('Cancelled', 'Cancelled'),
+        ('RTO', 'Returned to Origin'),
         ('Completed', 'Completed'),
+    )
+
+    PAYMENT_CHOICES = (
+        ('COD', 'Cash on Delivery'),
+        ('Prepaid', 'Prepaid'),
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -224,7 +240,16 @@ class Order(models.Model):
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
+    # Payment & Status
+    payment_mode = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='COD')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    
+    # Shiprocket fields
+    shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True)
+    shipment_id = models.CharField(max_length=50, blank=True, null=True)
+    awb_code = models.CharField(max_length=50, blank=True, null=True, help_text="Airway Bill number for tracking")
+    courier_name = models.CharField(max_length=100, blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
