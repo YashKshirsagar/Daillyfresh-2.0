@@ -6,7 +6,7 @@ from django.conf import settings
 from django.urls import reverse
 from .models import (
     HomeHero, Product, Address, Order, OrderItem, Coupon,
-    PartnerLogo, Testimonial, Combo, ProcessStep, Customer,
+    PartnerLogo, Testimonial, Combo, ProcessStep, Customer, Feedback,
 )
 
 admin.site.register(HomeHero)
@@ -302,3 +302,11 @@ class TestimonialAdmin(admin.ModelAdmin):
 @admin.register(Combo)
 class ComboAdmin(admin.ModelAdmin):
     list_display = ['name', 'current_price', 'original_price', 'unit', 'badge']
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ('user', 'message', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user__username', 'message')
+    readonly_fields = ('user', 'message', 'created_at')

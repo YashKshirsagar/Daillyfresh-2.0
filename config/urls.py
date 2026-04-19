@@ -6,7 +6,9 @@ from core.views import (
     apply_affiliate_coupon, remove_coupon, apply_coupon,
     terms_and_conditions, refund_policy,
     get_user_profile, update_user_profile, update_address, delete_address,
-    my_orders, get_user_orders, repeat_order
+    my_orders, get_user_orders, repeat_order,
+    submit_feedback,
+    shiprocket_webhook,
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -43,8 +45,14 @@ urlpatterns = [
     path('terms-and-conditions/', terms_and_conditions, name='terms_and_conditions'),
     path('refund-policy/', refund_policy, name='refund_policy'),
 
+    # Feedback
+    path('api/feedback/', submit_feedback, name='submit_feedback'),
+
     # Affiliate / Promo URL — freelancer/YouTuber ke liye
     path('ref/<str:code>/', apply_affiliate_coupon, name='apply_affiliate_coupon'),
+
+    # Shiprocket Webhook
+    path('webhook/shipping/', shiprocket_webhook, name='shiprocket_webhook'),
 
     path("__reload__/", include("django_browser_reload.urls")),
 ]

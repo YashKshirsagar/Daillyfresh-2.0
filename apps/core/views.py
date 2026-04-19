@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
@@ -6,9 +8,13 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 from decimal import Decimal
 
 from .models import *
+
+logger = logging.getLogger(__name__)
 
 
 # --- Main Home View ---
@@ -283,6 +289,14 @@ def place_order(request):
 
             # Session cleanup
             request.session.pop('applied_coupon', None)
+
+            # Push order to Shiprocket
+            if getattr(settings, 'SHIPROCKET_ENABLED', False):
+                try:
+                    from core.shiprocket import shiprocket
+                    shiprocket.create_order(order)
+                except Exception as e:
+                    logger.error(f"Shiprocket push failed for Order #{order.id}: {e}")
 
             return JsonResponse({
                 'success': True,
@@ -574,3 +588,120 @@ def delete_address(request):
         return JsonResponse({'success': False, 'message': 'Address not found'}, status=404)
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=400)
+
+
+# ---------------------------------------------------------------
+# Quick Feedback View
+# ---------------------------------------------------------------
+
+@login_required(login_url='login')
+def submit_feedback(request):
+    """AJAX endpoint to submit quick feedback and email it to the site owner."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request method.'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid request data.'}, status=400)
+
+    import re
+    from django.core.mail import send_mail
+    from django.conf import settings as django_settings
+
+    message = data.get('message', '').strip()
+
+    # Strip HTML tags for sanitization
+    message = re.sub(r'<[^>]+>', '', message)
+
+    # Validation
+    if not message:
+        return JsonResponse({'success': False, 'message': 'Feedback cannot be empty.'}, status=400)
+    if len(message) < 10:
+        return JsonResponse({'success': False, 'message': 'Feedback must be at least 10 characters.'}, status=400)
+    if len(message) > 500:
+        return JsonResponse({'success': False, 'message': 'Feedback must not exceed 500 characters.'}, status=400)
+
+    # Rate limiting: max 3 per user per hour
+    one_hour_ago = timezone.now() - timezone.timedelta(hours=1)
+    recent_count = Feedback.objects.filter(user=request.user, created_at__gte=one_hour_ago).count()
+    if recent_count >= 3:
+        return JsonResponse({'success': False, 'message': 'You can only submit 3 feedbacks per hour. Please try again later.'}, status=429)
+
+    # Save feedback
+    Feedback.objects.create(user=request.user, message=message)
+
+    # Send email
+    feedback_email = os.environ.get('FEEDBACK_EMAIL', '')
+    if feedback_email:
+        try:
+            customer_id = getattr(request.user, 'customer', None)
+            customer_id = customer_id.customer_id if customer_id else 'N/A'
+            send_mail(
+                subject=f"Quick Feedback from {request.user.get_full_name() or request.user.username} (ID: {customer_id})",
+                message=(
+                    f"Customer ID: {customer_id}\n"
+                    f"Username: {request.user.username}\n"
+                    f"Name: {request.user.get_full_name()}\n"
+                    f"Email: {request.user.email}\n\n"
+                    f"Feedback:\n{message}"
+                ),
+                from_email=django_settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[feedback_email],
+                fail_silently=not django_settings.DEBUG,
+            )
+        except Exception as e:
+            if django_settings.DEBUG:
+                return JsonResponse({'success': False, 'message': f'Email error: {e}'}, status=500)
+
+
+# ---------------------------------------------------------------
+# Shiprocket Webhook
+# ---------------------------------------------------------------
+
+@csrf_exempt
+def shiprocket_webhook(request):
+    """
+    Receive tracking updates from Shiprocket.
+    Shiprocket sends a POST with JSON body on every tracking event.
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "bad request"}, status=400)
+
+    sr_order_id = str(data.get("sr_order_id", ""))
+    awb = data.get("awb", "")
+    current_status = data.get("current_status", "")
+    courier_name = data.get("courier_name", "")
+
+    STATUS_MAP = {
+        "MANIFEST GENERATED": "Processing",
+        "PICKED UP": "Shipped",
+        "SHIPPED": "Shipped",
+        "IN TRANSIT": "In Transit",
+        "OUT FOR DELIVERY": "Out for Delivery",
+        "DELIVERED": "Delivered",
+        "RTO INITIATED": "RTO",
+        "RTO DELIVERED": "RTO",
+        "CANCELED": "Cancelled",
+    }
+
+    try:
+        order = Order.objects.get(shiprocket_order_id=sr_order_id)
+        order.awb_code = awb
+        order.courier_name = courier_name
+        new_status = STATUS_MAP.get(current_status)
+        if new_status:
+            order.status = new_status
+        order.save()
+        logger.info(f"Webhook updated Order #{order.id} → {current_status}")
+    except Order.DoesNotExist:
+        logger.warning(f"Webhook: No order found for sr_order_id={sr_order_id}")
+
+    return JsonResponse({"status": "ok"})
+
+    return JsonResponse({'success': True, 'message': 'Thanks for your feedback!'})
