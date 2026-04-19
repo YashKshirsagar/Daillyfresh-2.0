@@ -63,3 +63,10 @@ for _host in (_RENDER_HOST, _RAILWAY_HOST):
         _origin = f"https://{_host}"
         if _origin not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(_origin)
+
+# --------------------------------------------------------------------------
+# Shiprocket API
+# --------------------------------------------------------------------------
+SHIPROCKET_ENABLED = os.getenv("SHIPROCKET_ENABLED", "false").lower() == "true"
+SHIPROCKET_EMAIL = os.getenv("SHIPROCKET_EMAIL", "")
+SHIPROCKET_PASSWORD = os.getenv("SHIPROCKET_PASSWORD", "")
