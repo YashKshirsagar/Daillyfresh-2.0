@@ -622,10 +622,12 @@ def submit_feedback(request):
     feedback_email = os.environ.get('FEEDBACK_EMAIL', '')
     if feedback_email:
         try:
+            customer_id = getattr(request.user, 'customer', None)
+            customer_id = customer_id.customer_id if customer_id else 'N/A'
             send_mail(
-                subject=f"Quick Feedback from {request.user.get_full_name() or request.user.username} (ID: {request.user.id})",
+                subject=f"Quick Feedback from {request.user.get_full_name() or request.user.username} (ID: {customer_id})",
                 message=(
-                    f"Customer ID: {request.user.id}\n"
+                    f"Customer ID: {customer_id}\n"
                     f"Username: {request.user.username}\n"
                     f"Name: {request.user.get_full_name()}\n"
                     f"Email: {request.user.email}\n\n"
