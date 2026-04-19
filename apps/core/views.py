@@ -654,6 +654,8 @@ def submit_feedback(request):
             if django_settings.DEBUG:
                 return JsonResponse({'success': False, 'message': f'Email error: {e}'}, status=500)
 
+    return JsonResponse({'success': True, 'message': 'Thank you for your feedback!'})
+
 
 # ---------------------------------------------------------------
 # Shiprocket Webhook
