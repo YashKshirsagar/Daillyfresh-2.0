@@ -623,13 +623,20 @@ def submit_feedback(request):
     if feedback_email:
         try:
             send_mail(
-                subject=f"Quick Feedback from {request.user.get_full_name() or request.user.username}",
-                message=f"User: {request.user.username}\nEmail: {request.user.email}\n\nFeedback:\n{message}",
+                subject=f"Quick Feedback from {request.user.get_full_name() or request.user.username} (ID: {request.user.id})",
+                message=(
+                    f"Customer ID: {request.user.id}\n"
+                    f"Username: {request.user.username}\n"
+                    f"Name: {request.user.get_full_name()}\n"
+                    f"Email: {request.user.email}\n\n"
+                    f"Feedback:\n{message}"
+                ),
                 from_email=django_settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[feedback_email],
-                fail_silently=True,
+                fail_silently=not django_settings.DEBUG,
             )
-        except Exception:
-            pass  # Don't fail the response if email sending fails
+        except Exception as e:
+            if django_settings.DEBUG:
+                return JsonResponse({'success': False, 'message': f'Email error: {e}'}, status=500)
 
     return JsonResponse({'success': True, 'message': 'Thanks for your feedback!'})
