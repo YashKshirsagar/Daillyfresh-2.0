@@ -20,8 +20,11 @@ else:
 
 
 def _generate_customer_id():
-    """Generate a unique customer ID like DF-A1B2C3."""
-    return f"DF-{uuid.uuid4().hex[:6].upper()}"
+    """Generate a unique sequential 4-digit customer ID starting from 1111."""
+    last = Customer.objects.order_by('-customer_id').values_list('customer_id', flat=True).first()
+    if last:
+        return str(int(last) + 1)
+    return '1111'
 
 
 class Customer(models.Model):
