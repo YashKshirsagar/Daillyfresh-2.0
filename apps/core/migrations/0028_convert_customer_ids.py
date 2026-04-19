@@ -1,9 +1,17 @@
 from django.db import migrations
+from django.conf import settings
 
 
 def convert_customer_ids(apps, schema_editor):
-    """Convert existing DF-XXXXXX customer IDs to sequential 4-digit IDs starting from 1111."""
+    """Create missing Customer profiles and convert all IDs to sequential 4-digit format."""
     Customer = apps.get_model('core', 'Customer')
+    User = apps.get_model(settings.AUTH_USER_MODEL.split('.')[0], settings.AUTH_USER_MODEL.split('.')[1])
+
+    # Create Customer profiles for users who don't have one
+    for user in User.objects.all():
+        Customer.objects.get_or_create(user=user)
+
+    # Now convert all customer IDs to sequential 4-digit format
     customers = Customer.objects.all().order_by('created_at')
     next_id = 1111
     for customer in customers:

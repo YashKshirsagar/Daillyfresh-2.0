@@ -21,10 +21,16 @@ else:
 
 def _generate_customer_id():
     """Generate a unique sequential 4-digit customer ID starting from 1111."""
-    last = Customer.objects.order_by('-customer_id').values_list('customer_id', flat=True).first()
-    if last:
-        return str(int(last) + 1)
-    return '1111'
+    from django.db.models import IntegerField
+    from django.db.models.functions import Cast
+    last = (
+        Customer.objects
+        .annotate(id_int=Cast('customer_id', IntegerField()))
+        .order_by('-id_int')
+        .values_list('id_int', flat=True)
+        .first()
+    )
+    return str((last or 1110) + 1)
 
 
 class Customer(models.Model):
@@ -45,10 +51,15 @@ class Customer(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.customer_id:
-            self.customer_id = _generate_customer_id()
-            # Ensure uniqueness
-            while Customer.objects.filter(customer_id=self.customer_id).exists():
+            from django.db import IntegrityError
+            for _ in range(5):  # retry up to 5 times on race condition
                 self.customer_id = _generate_customer_id()
+                try:
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    continue
+            raise IntegrityError("Could not generate a unique customer ID after 5 attempts")
         super().save(*args, **kwargs)
 
 
