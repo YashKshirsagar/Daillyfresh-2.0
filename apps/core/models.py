@@ -210,6 +210,22 @@ class Address(models.Model):
         super().save(*args, **kwargs)
 
 
+# --- Local Pincode Model ---
+class LocalPincode(models.Model):
+    """Pincodes served locally — orders for these skip Shiprocket."""
+    pincode = models.CharField(max_length=10, unique=True, db_index=True)
+    label = models.CharField(max_length=100, blank=True, default='', help_text="Optional label, e.g. 'Sector 12, Noida'")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['pincode']
+        verbose_name = 'Local Pincode'
+        verbose_name_plural = 'Local Pincodes'
+
+    def __str__(self):
+        return f"{self.pincode}{' — ' + self.label if self.label else ''}"
+
+
 # --- Order Model ---
 class Order(models.Model):
     STATUS_CHOICES = (
@@ -229,6 +245,11 @@ class Order(models.Model):
         ('Prepaid', 'Prepaid'),
     )
 
+    DELIVERY_ZONE_CHOICES = (
+        ('local', 'Local'),
+        ('shiprocket', 'Shiprocket'),
+    )
+
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     shipping_address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True)
@@ -243,7 +264,11 @@ class Order(models.Model):
     # Payment & Status
     payment_mode = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='COD')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
-    
+    delivery_zone = models.CharField(
+        max_length=20, choices=DELIVERY_ZONE_CHOICES, default='shiprocket',
+        help_text="'Local' orders are handled in-house and not pushed to Shiprocket."
+    )
+
     # Shiprocket fields
     shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True)
     shipment_id = models.CharField(max_length=50, blank=True, null=True)

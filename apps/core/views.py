@@ -290,8 +290,15 @@ def place_order(request):
             # Session cleanup
             request.session.pop('applied_coupon', None)
 
-            # Push order to Shiprocket
-            if getattr(settings, 'SHIPROCKET_ENABLED', False):
+            # Determine delivery zone based on pincode
+            is_local = LocalPincode.objects.filter(
+                pincode=shipping_address.pincode, is_active=True
+            ).exists()
+            order.delivery_zone = 'local' if is_local else 'shiprocket'
+            order.save(update_fields=['delivery_zone'])
+
+            # Push order to Shiprocket (only for non-local zones)
+            if not is_local and getattr(settings, 'SHIPROCKET_ENABLED', False):
                 try:
                     from core.shiprocket import shiprocket
                     shiprocket.create_order(order)

@@ -7,6 +7,7 @@ from django.urls import reverse
 from .models import (
     HomeHero, Product, Address, Order, OrderItem, Coupon,
     PartnerLogo, Testimonial, Combo, ProcessStep, Customer, Feedback,
+    LocalPincode,
 )
 
 admin.site.register(HomeHero)
@@ -34,8 +35,8 @@ class OrderItemInline(admin.TabularInline):
 # ─── Order Admin ───
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'customer_id_display', 'user', 'status', 'total_amount', 'created_at']
-    list_filter = ['status', 'created_at']
+    list_display = ['id', 'customer_id_display', 'user', 'status', 'delivery_zone', 'total_amount', 'created_at']
+    list_filter = ['status', 'delivery_zone', 'created_at']
     search_fields = ['id', 'user__username', 'user__email', 'customer__customer_id']
     readonly_fields = [
         'user', 'customer_link', 'shipping_address',
@@ -53,7 +54,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': ('subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount'),
         }),
         ('Status & Dates', {
-            'fields': ('status', 'created_at', 'updated_at'),
+            'fields': ('status', 'delivery_zone', 'created_at', 'updated_at'),
         }),
     )
 
@@ -155,6 +156,14 @@ class AddressAdmin(admin.ModelAdmin):
     list_display = ['full_name', 'user', 'city', 'pincode', 'is_default']
     search_fields = ['full_name', 'user__username', 'city', 'pincode']
     list_filter = ['is_default', 'city']
+
+
+@admin.register(LocalPincode)
+class LocalPincodeAdmin(admin.ModelAdmin):
+    list_display = ['pincode', 'label', 'is_active']
+    list_editable = ['label', 'is_active']
+    search_fields = ['pincode', 'label']
+    list_filter = ['is_active']
 
 
 @admin.register(ProcessStep)
