@@ -58,7 +58,7 @@ class ShiprocketAPI:
         items = order.items.select_related("product").all()
 
         payload = {
-            "order_id": str(order.id),
+            "order_id": order.order_ref,
             "order_date": order.created_at.strftime("%Y-%m-%d %H:%M"),
             "pickup_location": "Home",
             "billing_customer_name": address.full_name.split()[0],

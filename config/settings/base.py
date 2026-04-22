@@ -99,3 +99,10 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+# Shiprocket
+SHIPROCKET_ENABLED = os.getenv("SHIPROCKET_ENABLED", "false").lower() == "true"
+SHIPROCKET_EMAIL = os.getenv("SHIPROCKET_EMAIL", "")
+SHIPROCKET_PASSWORD = os.getenv("SHIPROCKET_PASSWORD", "")
+# Optional: set this in Shiprocket dashboard → Settings → API → Webhooks → Security Token
+SHIPROCKET_WEBHOOK_TOKEN = os.getenv("SHIPROCKET_WEBHOOK_TOKEN", "")
