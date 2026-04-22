@@ -309,6 +309,7 @@ def place_order(request):
                 'success': True,
                 'message': 'Order placed successfully!',
                 'order_id': order.id,
+                'order_ref': order.order_ref,
             })
 
         except Address.DoesNotExist:
@@ -677,6 +678,14 @@ def shiprocket_webhook(request):
     if request.method != "POST":
         return JsonResponse({"status": "error"}, status=405)
 
+    # Optional token verification — set SHIPROCKET_WEBHOOK_TOKEN in env to enable
+    webhook_token = getattr(settings, 'SHIPROCKET_WEBHOOK_TOKEN', '')
+    if webhook_token:
+        incoming = request.headers.get('x-api-key', '')
+        if incoming != webhook_token:
+            logger.warning("Shiprocket webhook: invalid token received")
+            return JsonResponse({"status": "unauthorized"}, status=401)
+
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -706,11 +715,9 @@ def shiprocket_webhook(request):
         new_status = STATUS_MAP.get(current_status)
         if new_status:
             order.status = new_status
-        order.save()
+        order.save(update_fields=['awb_code', 'courier_name', 'status'])
         logger.info(f"Webhook updated Order #{order.id} → {current_status}")
     except Order.DoesNotExist:
         logger.warning(f"Webhook: No order found for sr_order_id={sr_order_id}")
 
     return JsonResponse({"status": "ok"})
-
-    return JsonResponse({'success': True, 'message': 'Thanks for your feedback!'})

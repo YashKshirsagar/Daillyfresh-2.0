@@ -35,11 +35,11 @@ class OrderItemInline(admin.TabularInline):
 # ─── Order Admin ───
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'customer_id_display', 'user', 'status', 'delivery_zone', 'total_amount', 'created_at']
+    list_display = ['order_ref', 'customer_id_display', 'user', 'status', 'delivery_zone', 'total_amount', 'created_at']
     list_filter = ['status', 'delivery_zone', 'created_at']
-    search_fields = ['id', 'user__username', 'user__email', 'customer__customer_id']
+    search_fields = ['order_ref', 'id', 'user__username', 'user__email', 'customer__customer_id']
     readonly_fields = [
-        'user', 'customer_link', 'shipping_address',
+        'order_ref', 'user', 'customer_link', 'shipping_address',
         'subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount',
         'created_at', 'updated_at',
     ]
@@ -47,6 +47,9 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
 
     fieldsets = (
+        ('Order Reference', {
+            'fields': ('order_ref',),
+        }),
         ('Customer', {
             'fields': ('user', 'customer_link', 'shipping_address'),
         }),
@@ -84,7 +87,7 @@ class OrderInline(admin.TabularInline):
 
     def order_link(self, obj):
         url = reverse('admin:core_order_change', args=[obj.pk])
-        return format_html('<a href="{}">Order #{}</a>', url, obj.id)
+        return format_html('<a href="{}">{}</a>', url, obj.order_ref or f'Order #{obj.id}')
     order_link.short_description = 'Order'
 
     def has_add_permission(self, request, obj=None):

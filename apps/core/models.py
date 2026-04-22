@@ -33,6 +33,11 @@ def _generate_customer_id():
     return str((last or 1110) + 1)
 
 
+def _generate_order_ref():
+    """Generate a short UUID-based order reference, e.g. DF-A3F2B1C9."""
+    return f"DF-{uuid.uuid4().hex[:8].upper()}"
+
+
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer')
     customer_id = models.CharField(
@@ -250,6 +255,10 @@ class Order(models.Model):
         ('shiprocket', 'Shiprocket'),
     )
 
+    order_ref = models.CharField(
+        max_length=15, unique=True, editable=False, db_index=True,
+        help_text="Auto-generated unique order reference, e.g. DF-A3F2B1C9",
+    )
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     shipping_address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True)
@@ -270,7 +279,7 @@ class Order(models.Model):
     )
 
     # Shiprocket fields
-    shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True)
+    shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     shipment_id = models.CharField(max_length=50, blank=True, null=True)
     awb_code = models.CharField(max_length=50, blank=True, null=True, help_text="Airway Bill number for tracking")
     courier_name = models.CharField(max_length=100, blank=True, null=True)
@@ -282,12 +291,23 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Order #{self.id} - {self.user.username if self.user else 'Guest'}"
+        return f"{self.order_ref} — {self.user.username if self.user else 'Guest'}"
 
     def save(self, *args, **kwargs):
         # Auto-link order to customer profile
         if self.user and not self.customer:
             self.customer = getattr(self.user, 'customer', None)
+        # Auto-generate order_ref on first save
+        if not self.order_ref:
+            from django.db import IntegrityError
+            for _ in range(5):
+                self.order_ref = _generate_order_ref()
+                try:
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    continue
+            raise IntegrityError("Could not generate a unique order ref after 5 attempts")
         super().save(*args, **kwargs)
 
 
