@@ -283,6 +283,10 @@ class Order(models.Model):
     shipment_id = models.CharField(max_length=50, blank=True, null=True)
     awb_code = models.CharField(max_length=50, blank=True, null=True, help_text="Airway Bill number for tracking")
     courier_name = models.CharField(max_length=100, blank=True, null=True)
+
+    # Razorpay fields
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, help_text="Razorpay order ID (rzp_...)")
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Razorpay payment ID after successful payment")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

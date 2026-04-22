@@ -323,6 +323,208 @@ def place_order(request):
 
 
 # ---------------------------------------------------------------
+# Razorpay — Create Order (no DB order yet)
+# ---------------------------------------------------------------
+
+@login_required
+def create_razorpay_order(request):
+    """
+    Step 1 of online payment flow.
+    Validates cart server-side, creates a Razorpay order, returns the
+    razorpay_order_id + key_id to the frontend so it can open the modal.
+    No DB Order is created here — only after payment is verified.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+    try:
+        import razorpay
+        data = json.loads(request.body)
+        cart_items = data.get('cart', [])
+        address_id = data.get('address_id')
+        coupon_code = data.get('coupon_code')
+
+        Address.objects.get(id=address_id, user=request.user)  # validate ownership
+
+        # Recalculate totals server-side
+        actual_subtotal = Decimal('0.00')
+        for item in cart_items:
+            product = Product.objects.get(id=item['id'])
+            actual_subtotal += product.current_price * int(item['quantity'])
+
+        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+        discount_amount = Decimal('0.00')
+
+        if coupon_code:
+            try:
+                coupon = Coupon.objects.get(code__iexact=coupon_code)
+                if coupon.is_valid and actual_subtotal >= coupon.min_order_amount:
+                    if coupon.discount_type == 'Percentage':
+                        discount_amount = (actual_subtotal * coupon.discount_value) / Decimal('100.00')
+                    else:
+                        discount_amount = coupon.discount_value
+            except Coupon.DoesNotExist:
+                pass
+
+        total_amount = max(actual_subtotal + delivery_fee - discount_amount, Decimal('0.00'))
+
+        # Razorpay expects amount in paise (1 INR = 100 paise)
+        amount_paise = int(total_amount * 100)
+
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+        )
+        rz_order = client.order.create({
+            'amount': amount_paise,
+            'currency': 'INR',
+            'receipt': f'cart-{request.user.id}',
+            'payment_capture': 1,
+        })
+
+        return JsonResponse({
+            'success': True,
+            'razorpay_order_id': rz_order['id'],
+            'amount': amount_paise,
+            'key_id': settings.RAZORPAY_KEY_ID,
+        })
+
+    except Address.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Selected address not found.'})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'One or more products not found.'})
+    except Exception as e:
+        logger.error(f"create_razorpay_order error: {e}")
+        return JsonResponse({'success': False, 'message': 'Could not initiate payment. Please try again.'})
+
+
+# ---------------------------------------------------------------
+# Razorpay — Verify Payment & Create DB Order
+# ---------------------------------------------------------------
+
+@login_required
+def verify_payment(request):
+    """
+    Step 2 of online payment flow.
+    Verifies Razorpay HMAC signature — if valid, creates the DB Order
+    with payment_mode='Prepaid' and pushes to Shiprocket.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+    try:
+        import razorpay
+        data = json.loads(request.body)
+
+        razorpay_order_id = data.get('razorpay_order_id', '')
+        razorpay_payment_id = data.get('razorpay_payment_id', '')
+        razorpay_signature = data.get('razorpay_signature', '')
+        cart_items = data.get('cart', [])
+        address_id = data.get('address_id')
+        coupon_code = data.get('coupon_code')
+
+        # 1. Verify HMAC signature
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+        )
+        try:
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+            })
+        except razorpay.errors.SignatureVerificationError:
+            logger.warning(f"Razorpay signature verification failed for {razorpay_order_id}")
+            return JsonResponse({'success': False, 'message': 'Payment verification failed. Contact support.'})
+
+        # 2. Recalculate totals server-side (never trust frontend)
+        shipping_address = Address.objects.get(id=address_id, user=request.user)
+        actual_subtotal = Decimal('0.00')
+        order_products = []
+        for item in cart_items:
+            product = Product.objects.get(id=item['id'])
+            qty = int(item['quantity'])
+            actual_subtotal += product.current_price * qty
+            order_products.append((product, qty))
+
+        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+        applied_coupon = None
+        discount_amount = Decimal('0.00')
+
+        if coupon_code:
+            try:
+                coupon = Coupon.objects.get(code__iexact=coupon_code)
+                if coupon.is_valid and actual_subtotal >= coupon.min_order_amount:
+                    applied_coupon = coupon
+                    if coupon.discount_type == 'Percentage':
+                        discount_amount = (actual_subtotal * coupon.discount_value) / Decimal('100.00')
+                    else:
+                        discount_amount = coupon.discount_value
+            except Coupon.DoesNotExist:
+                pass
+
+        total_amount = max(actual_subtotal + delivery_fee - discount_amount, Decimal('0.00'))
+
+        # 3. Create DB Order
+        order = Order.objects.create(
+            user=request.user,
+            shipping_address=shipping_address,
+            subtotal=actual_subtotal,
+            delivery_fee=delivery_fee,
+            coupon=applied_coupon,
+            discount_amount=discount_amount,
+            total_amount=total_amount,
+            payment_mode='Prepaid',
+            status='Processing',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+        )
+
+        for product, qty in order_products:
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                price=product.current_price,
+                quantity=qty,
+            )
+
+        if applied_coupon:
+            applied_coupon.total_uses += 1
+            if applied_coupon.is_affiliate:
+                applied_coupon.total_revenue_generated += total_amount
+            applied_coupon.save()
+
+        request.session.pop('applied_coupon', None)
+
+        # 4. Determine delivery zone & push to Shiprocket as Prepaid
+        is_local = LocalPincode.objects.filter(
+            pincode=shipping_address.pincode, is_active=True
+        ).exists()
+        order.delivery_zone = 'local' if is_local else 'shiprocket'
+        order.save(update_fields=['delivery_zone'])
+
+        if not is_local and getattr(settings, 'SHIPROCKET_ENABLED', False):
+            try:
+                from core.shiprocket import shiprocket
+                shiprocket.create_order(order)
+            except Exception as e:
+                logger.error(f"Shiprocket push failed for Order #{order.id}: {e}")
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Payment successful! Order placed.',
+            'order_ref': order.order_ref,
+        })
+
+    except Address.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Selected address not found.'})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'One or more products not found.'})
+    except Exception as e:
+        logger.error(f"verify_payment error: {e}")
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+# ---------------------------------------------------------------
 # Affiliate / Promo URL View
 # ---------------------------------------------------------------
 
