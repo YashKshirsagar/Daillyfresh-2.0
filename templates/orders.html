@@ -213,6 +213,13 @@
                   <span class="font-bold text-gray-900">Total Amount</span>
                   <span class="font-bold text-lg text-[#16a34a]">₹<span x-text="order.total_amount.toFixed(2)"></span></span>
                 </div>
+                <div class="flex justify-between text-sm mt-2">
+                  <span class="text-gray-600">Payment</span>
+                  <span
+                    :class="order.payment_mode === 'Prepaid' ? 'text-green-600 font-semibold' : 'text-gray-700 font-medium'"
+                    x-text="order.payment_mode === 'Prepaid' ? '✓ Paid Online' : 'Cash on Delivery'"
+                  ></span>
+                </div>
               </div>
 
               <!-- Action Button -->

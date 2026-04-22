@@ -605,7 +605,9 @@ def get_user_orders(request):
         orders_data.append({
             'id': order.id,
             'user_order_number': user_order_number,
+            'order_ref': order.order_ref,
             'status': order.status,
+            'payment_mode': order.payment_mode,
             'created_at': order.created_at.strftime('%B %d, %Y'),
             'created_at_iso': order.created_at.isoformat(),
             'subtotal': float(order.subtotal),

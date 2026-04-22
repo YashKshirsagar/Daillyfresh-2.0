@@ -35,8 +35,8 @@ class OrderItemInline(admin.TabularInline):
 # ─── Order Admin ───
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['order_ref', 'customer_id_display', 'user', 'status', 'delivery_zone', 'total_amount', 'created_at']
-    list_filter = ['status', 'delivery_zone', 'created_at']
+    list_display = ['order_ref', 'customer_id_display', 'user', 'status', 'payment_mode', 'delivery_zone', 'total_amount', 'created_at']
+    list_filter = ['status', 'payment_mode', 'delivery_zone', 'created_at']
     search_fields = ['order_ref', 'id', 'user__username', 'user__email', 'customer__customer_id']
     readonly_fields = [
         'order_ref', 'user', 'customer_link', 'shipping_address',
@@ -57,7 +57,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': ('subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount'),
         }),
         ('Status & Dates', {
-            'fields': ('status', 'delivery_zone', 'created_at', 'updated_at'),
+            'fields': ('payment_mode', 'status', 'delivery_zone', 'created_at', 'updated_at'),
         }),
     )
 
