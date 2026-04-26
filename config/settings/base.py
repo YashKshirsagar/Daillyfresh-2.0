@@ -104,6 +104,7 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 SHIPROCKET_ENABLED = os.getenv("SHIPROCKET_ENABLED", "false").lower() == "true"
 SHIPROCKET_EMAIL = os.getenv("SHIPROCKET_EMAIL", "")
 SHIPROCKET_PASSWORD = os.getenv("SHIPROCKET_PASSWORD", "")
+SHIPROCKET_PICKUP_LOCATION = os.getenv("SHIPROCKET_PICKUP_LOCATION", "Home")
 # Optional: set this in Shiprocket dashboard → Settings → API → Webhooks → Security Token
 SHIPROCKET_WEBHOOK_TOKEN = os.getenv("SHIPROCKET_WEBHOOK_TOKEN", "")
 

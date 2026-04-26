@@ -255,6 +255,13 @@ class Order(models.Model):
         ('shiprocket', 'Shiprocket'),
     )
 
+    SHIPROCKET_SYNC_CHOICES = (
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('not_required', 'Not Required'),
+    )
+
     order_ref = models.CharField(
         max_length=15, unique=True, editable=False, db_index=True,
         help_text="Auto-generated unique order reference, e.g. DF-A3F2B1C9",
@@ -279,6 +286,9 @@ class Order(models.Model):
     )
 
     # Shiprocket fields
+    shiprocket_sync_status = models.CharField(max_length=20, choices=SHIPROCKET_SYNC_CHOICES, default='pending')
+    shiprocket_sync_error = models.TextField(blank=True, default='')
+    shiprocket_synced_at = models.DateTimeField(blank=True, null=True)
     shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     shipment_id = models.CharField(max_length=50, blank=True, null=True)
     awb_code = models.CharField(max_length=50, blank=True, null=True, help_text="Airway Bill number for tracking")

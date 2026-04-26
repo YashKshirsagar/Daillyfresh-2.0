@@ -52,6 +52,8 @@ Add to `.env`:
 SHIPROCKET_ENABLED=true
 SHIPROCKET_EMAIL=your-api-user@email.com
 SHIPROCKET_PASSWORD=your-api-password
+SHIPROCKET_PICKUP_LOCATION=Primary
+SHIPROCKET_WEBHOOK_TOKEN=your-webhook-token
 ```
 
 Add to `config/settings/base.py`:
@@ -60,6 +62,8 @@ Add to `config/settings/base.py`:
 SHIPROCKET_ENABLED = os.getenv("SHIPROCKET_ENABLED", "false").lower() == "true"
 SHIPROCKET_EMAIL = os.getenv("SHIPROCKET_EMAIL", "")
 SHIPROCKET_PASSWORD = os.getenv("SHIPROCKET_PASSWORD", "")
+SHIPROCKET_PICKUP_LOCATION = os.getenv("SHIPROCKET_PICKUP_LOCATION", "Home")
+SHIPROCKET_WEBHOOK_TOKEN = os.getenv("SHIPROCKET_WEBHOOK_TOKEN", "")
 ```
 
 ---

@@ -295,15 +295,20 @@ def place_order(request):
                 pincode=shipping_address.pincode, is_active=True
             ).exists()
             order.delivery_zone = 'local' if is_local else 'shiprocket'
-            order.save(update_fields=['delivery_zone'])
+            if is_local:
+                order.shiprocket_sync_status = 'not_required'
+                order.shiprocket_sync_error = ''
+                order.shiprocket_synced_at = None
+                order.save(update_fields=['delivery_zone', 'shiprocket_sync_status', 'shiprocket_sync_error', 'shiprocket_synced_at'])
+            else:
+                order.save(update_fields=['delivery_zone'])
 
             # Push order to Shiprocket (only for non-local zones)
             if not is_local and getattr(settings, 'SHIPROCKET_ENABLED', False):
-                try:
-                    from core.shiprocket import shiprocket
-                    shiprocket.create_order(order)
-                except Exception as e:
-                    logger.error(f"Shiprocket push failed for Order #{order.id}: {e}")
+                from core.shiprocket import shiprocket
+                result = shiprocket.sync_order(order)
+                if not result.get('success'):
+                    logger.error(f"Shiprocket push failed for Order #{order.id}: {result.get('message', 'Unknown error')}")
 
             return JsonResponse({
                 'success': True,
@@ -500,14 +505,19 @@ def verify_payment(request):
             pincode=shipping_address.pincode, is_active=True
         ).exists()
         order.delivery_zone = 'local' if is_local else 'shiprocket'
-        order.save(update_fields=['delivery_zone'])
+        if is_local:
+            order.shiprocket_sync_status = 'not_required'
+            order.shiprocket_sync_error = ''
+            order.shiprocket_synced_at = None
+            order.save(update_fields=['delivery_zone', 'shiprocket_sync_status', 'shiprocket_sync_error', 'shiprocket_synced_at'])
+        else:
+            order.save(update_fields=['delivery_zone'])
 
         if not is_local and getattr(settings, 'SHIPROCKET_ENABLED', False):
-            try:
-                from core.shiprocket import shiprocket
-                shiprocket.create_order(order)
-            except Exception as e:
-                logger.error(f"Shiprocket push failed for Order #{order.id}: {e}")
+            from core.shiprocket import shiprocket
+            result = shiprocket.sync_order(order)
+            if not result.get('success'):
+                logger.error(f"Shiprocket push failed for Order #{order.id}: {result.get('message', 'Unknown error')}")
 
         return JsonResponse({
             'success': True,
@@ -604,6 +614,7 @@ def get_user_orders(request):
         
         orders_data.append({
             'id': order.id,
+            'customer_id': order.customer.customer_id if order.customer else None,
             'user_order_number': user_order_number,
             'order_ref': order.order_ref,
             'status': order.status,
@@ -903,26 +914,15 @@ def shiprocket_webhook(request):
     current_status = data.get("current_status", "")
     courier_name = data.get("courier_name", "")
 
-    STATUS_MAP = {
-        "MANIFEST GENERATED": "Processing",
-        "PICKED UP": "Shipped",
-        "SHIPPED": "Shipped",
-        "IN TRANSIT": "In Transit",
-        "OUT FOR DELIVERY": "Out for Delivery",
-        "DELIVERED": "Delivered",
-        "RTO INITIATED": "RTO",
-        "RTO DELIVERED": "RTO",
-        "CANCELED": "Cancelled",
-    }
-
     try:
+        from core.shiprocket import shiprocket
         order = Order.objects.get(shiprocket_order_id=sr_order_id)
-        order.awb_code = awb
-        order.courier_name = courier_name
-        new_status = STATUS_MAP.get(current_status)
-        if new_status:
-            order.status = new_status
-        order.save(update_fields=['awb_code', 'courier_name', 'status'])
+        new_status = shiprocket.apply_tracking_update(
+            order,
+            current_status=current_status,
+            awb=awb,
+            courier_name=courier_name,
+        )
         logger.info(f"Webhook updated Order #{order.id} → {current_status}")
     except Order.DoesNotExist:
         logger.warning(f"Webhook: No order found for sr_order_id={sr_order_id}")
