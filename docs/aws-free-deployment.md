@@ -254,6 +254,8 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 
 ## Recommended Client Handoff Standard
 
+See also: `docs/aws-client-handoff.md` for the exact account, credential, domain, and webhook changes to make before delivery.
+
 If you are delivering this to a client, give them these items:
 
 - AWS account ownership in the client's account, not yours
