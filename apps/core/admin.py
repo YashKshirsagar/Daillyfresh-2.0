@@ -18,8 +18,8 @@ admin.site.register(Product)
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ['product', 'price', 'quantity', 'item_total']
-    fields = ['product', 'quantity', 'price', 'item_total']
+    readonly_fields = ['product', 'combo', 'price', 'quantity', 'item_total']
+    fields = ['product', 'combo', 'quantity', 'price', 'item_total']
 
     def item_total(self, obj):
         return f"₹{obj.get_cost()}"

@@ -180,7 +180,7 @@ class ShiprocketAPI:
         Returns the API response dict.
         """
         address = order.shipping_address
-        items = order.items.select_related("product").all()
+        items = order.items.select_related("product", "combo").all()
 
         payload = {
             "order_id": order.order_ref,
@@ -199,8 +199,12 @@ class ShiprocketAPI:
             "order_items": [
                 {
                     "name": item.product.name if item.product else "Product",
-                    "sku": (item.product.sku if item.product and item.product.sku
-                            else f"PROD-{item.product_id or item.id}"),
+                    "name": item.product.name if item.product else item.combo.name if item.combo else "Item",
+                    "sku": (
+                        item.product.sku if item.product and item.product.sku
+                        else item.combo.sku if item.combo and item.combo.sku
+                        else f"PROD-{item.product_id or item.combo_id or item.id}"
+                    ),
                     "units": item.quantity,
                     "selling_price": str(item.price),
                     "discount": "0",
@@ -217,7 +221,8 @@ class ShiprocketAPI:
             "weight": float(
                 sum(
                     (item.product.weight * item.quantity)
-                    if item.product else 0.5
+                    if item.product else (item.combo.weight * item.quantity)
+                    if item.combo else 0.5
                     for item in items
                 )
             ),

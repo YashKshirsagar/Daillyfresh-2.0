@@ -17,6 +17,55 @@ from .models import *
 logger = logging.getLogger(__name__)
 
 
+def _resolve_cart_item(item):
+    item_id = str(item.get('id', ''))
+    quantity = int(item.get('quantity', 0))
+    if quantity <= 0:
+        raise ValueError('Invalid quantity.')
+
+    if item_id.startswith('combo-'):
+        combo_id = int(item_id.split('-', 1)[1])
+        combo = Combo.objects.get(id=combo_id)
+        return {
+            'kind': 'combo',
+            'object': combo,
+            'quantity': quantity,
+            'price': combo.current_price,
+        }
+
+    product = Product.objects.get(id=int(item_id))
+    return {
+        'kind': 'product',
+        'object': product,
+        'quantity': quantity,
+        'price': product.current_price,
+    }
+
+
+def _order_item_cart_payload(order_item):
+    combo = order_item.combo
+    product = order_item.product
+    if combo:
+        return {
+            'id': f'combo-{combo.id}',
+            'name': combo.name,
+            'price': str(combo.current_price),
+            'image': combo.image.url if combo.image else '',
+            'unit': combo.unit,
+            'quantity': order_item.quantity,
+        }
+    if product:
+        return {
+            'id': product.id,
+            'name': product.name,
+            'price': str(product.current_price),
+            'image': product.image.url if product.image else '',
+            'unit': product.unit,
+            'quantity': order_item.quantity,
+        }
+    return None
+
+
 # --- Main Home View ---
 def home(request):
     slides = HomeHero.objects.order_by('order')
@@ -228,12 +277,11 @@ def place_order(request):
 
             # Backend pe actual subtotal calculate karo (DB prices se)
             actual_subtotal = Decimal('0.00')
-            order_products = []
+            order_lines = []
             for item in cart_items:
-                product = Product.objects.get(id=item['id'])
-                qty = int(item['quantity'])
-                actual_subtotal += product.current_price * qty
-                order_products.append((product, qty))
+                resolved_item = _resolve_cart_item(item)
+                actual_subtotal += resolved_item['price'] * resolved_item['quantity']
+                order_lines.append(resolved_item)
 
             # Delivery fee
             delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
@@ -272,12 +320,13 @@ def place_order(request):
             )
 
             # Order items
-            for product, qty in order_products:
+            for line in order_lines:
                 OrderItem.objects.create(
                     order=order,
-                    product=product,
-                    price=product.current_price,
-                    quantity=qty,
+                    product=line['object'] if line['kind'] == 'product' else None,
+                    combo=line['object'] if line['kind'] == 'combo' else None,
+                    price=line['price'],
+                    quantity=line['quantity'],
                 )
 
             # Coupon stats update
@@ -319,8 +368,10 @@ def place_order(request):
 
         except Address.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Selected address not found.'})
-        except Product.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'One or more products not found.'})
+        except (Product.DoesNotExist, Combo.DoesNotExist):
+            return JsonResponse({'success': False, 'message': 'One or more cart items were not found.'})
+        except ValueError as e:
+            return JsonResponse({'success': False, 'message': str(e) or 'Invalid cart item.'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
 
@@ -354,8 +405,8 @@ def create_razorpay_order(request):
         # Recalculate totals server-side
         actual_subtotal = Decimal('0.00')
         for item in cart_items:
-            product = Product.objects.get(id=item['id'])
-            actual_subtotal += product.current_price * int(item['quantity'])
+            resolved_item = _resolve_cart_item(item)
+            actual_subtotal += resolved_item['price'] * resolved_item['quantity']
 
         delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
         discount_amount = Decimal('0.00')
@@ -376,6 +427,13 @@ def create_razorpay_order(request):
         # Razorpay expects amount in paise (1 INR = 100 paise)
         amount_paise = int(total_amount * 100)
 
+        if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
+            logger.error("create_razorpay_order error: Razorpay credentials are missing")
+            return JsonResponse({
+                'success': False,
+                'message': 'Online payment is temporarily unavailable. Please contact support.'
+            })
+
         client = razorpay.Client(
             auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
         )
@@ -395,8 +453,29 @@ def create_razorpay_order(request):
 
     except Address.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Selected address not found.'})
-    except Product.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'One or more products not found.'})
+    except (Product.DoesNotExist, Combo.DoesNotExist):
+        return JsonResponse({'success': False, 'message': 'One or more cart items were not found.'})
+    except ValueError as e:
+        return JsonResponse({'success': False, 'message': str(e) or 'Invalid cart item.'})
+    except razorpay.errors.BadRequestError as e:
+        key_prefix = settings.RAZORPAY_KEY_ID.split('_', 1)[0] if settings.RAZORPAY_KEY_ID else 'missing'
+        logger.error(
+            "create_razorpay_order Razorpay bad request: %s (key_prefix=%s, key_present=%s, secret_present=%s)",
+            e,
+            key_prefix,
+            bool(settings.RAZORPAY_KEY_ID),
+            bool(settings.RAZORPAY_KEY_SECRET),
+        )
+        return JsonResponse({
+            'success': False,
+            'message': 'Online payment is temporarily unavailable. Please contact support.'
+        })
+    except razorpay.errors.ServerError as e:
+        logger.error("create_razorpay_order Razorpay server error: %s", e)
+        return JsonResponse({
+            'success': False,
+            'message': 'Payment gateway is temporarily unavailable. Please try again.'
+        })
     except Exception as e:
         logger.error(f"create_razorpay_order error: {e}")
         return JsonResponse({'success': False, 'message': 'Could not initiate payment. Please try again.'})
@@ -444,12 +523,11 @@ def verify_payment(request):
         # 2. Recalculate totals server-side (never trust frontend)
         shipping_address = Address.objects.get(id=address_id, user=request.user)
         actual_subtotal = Decimal('0.00')
-        order_products = []
+        order_lines = []
         for item in cart_items:
-            product = Product.objects.get(id=item['id'])
-            qty = int(item['quantity'])
-            actual_subtotal += product.current_price * qty
-            order_products.append((product, qty))
+            resolved_item = _resolve_cart_item(item)
+            actual_subtotal += resolved_item['price'] * resolved_item['quantity']
+            order_lines.append(resolved_item)
 
         delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
         applied_coupon = None
@@ -484,12 +562,13 @@ def verify_payment(request):
             razorpay_payment_id=razorpay_payment_id,
         )
 
-        for product, qty in order_products:
+        for line in order_lines:
             OrderItem.objects.create(
                 order=order,
-                product=product,
-                price=product.current_price,
-                quantity=qty,
+                product=line['object'] if line['kind'] == 'product' else None,
+                combo=line['object'] if line['kind'] == 'combo' else None,
+                price=line['price'],
+                quantity=line['quantity'],
             )
 
         if applied_coupon:
@@ -527,8 +606,10 @@ def verify_payment(request):
 
     except Address.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Selected address not found.'})
-    except Product.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'One or more products not found.'})
+    except (Product.DoesNotExist, Combo.DoesNotExist):
+        return JsonResponse({'success': False, 'message': 'One or more cart items were not found.'})
+    except ValueError as e:
+        return JsonResponse({'success': False, 'message': str(e) or 'Invalid cart item.'})
     except Exception as e:
         logger.error(f"verify_payment error: {e}")
         return JsonResponse({'success': False, 'message': str(e)})
@@ -588,7 +669,7 @@ def my_orders(request):
 @login_required(login_url='login')
 def get_user_orders(request):
     """AJAX endpoint to fetch user orders"""
-    orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product')
+    orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product', 'items__combo')
 
     # Optional status filter
     status = request.GET.get('status')
@@ -603,10 +684,12 @@ def get_user_orders(request):
         user_order_number = total_user_orders - idx
         items_data = []
         for item in order.items.all():
+            item_name = item.product.name if item.product else item.combo.name if item.combo else 'Deleted Item'
+            item_identifier = item.product.id if item.product else f"combo-{item.combo.id}" if item.combo else None
             items_data.append({
                 'id': item.id,
-                'product_name': item.product.name if item.product else 'Deleted Product',
-                'product_id': item.product.id if item.product else None,
+                'product_name': item_name,
+                'product_id': item_identifier,
                 'quantity': item.quantity,
                 'price': float(item.price),
                 'total': float(item.get_cost()),
@@ -653,20 +736,13 @@ def repeat_order(request):
         cart_items = []
         skipped_items = []
 
-        for item in original_order.items.select_related('product'):
-            product = item.product
-            if not product:
-                skipped_items.append(item.product_id)
+        for item in original_order.items.select_related('product', 'combo'):
+            cart_payload = _order_item_cart_payload(item)
+            if not cart_payload:
+                skipped_items.append(item.id)
                 continue
 
-            cart_items.append({
-                'id': product.id,
-                'name': product.name,
-                'price': str(product.current_price),
-                'image': product.image.url if product.image else '',
-                'unit': product.unit,
-                'quantity': item.quantity,
-            })
+            cart_items.append(cart_payload)
 
         if not cart_items:
             return JsonResponse({
