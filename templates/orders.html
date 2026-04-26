@@ -68,6 +68,12 @@
           this.loading = true;
           this.loadOrders();
         },
+        getCsrfToken() {
+          const cookieValue = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('csrftoken='));
+          return cookieValue ? decodeURIComponent(cookieValue.split('=')[1]) : '';
+        },
         async repeatOrder(orderId) {
           if (!confirm('Repeat this order?')) return;
           
@@ -76,14 +82,20 @@
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                'X-CSRFToken': this.getCsrfToken()
               },
               body: JSON.stringify({ order_id: orderId })
             });
             const data = await response.json();
             if (data.success) {
-              alert(data.message);
-              this.loadOrders();
+              Alpine.store('cart').replace(data.cart_items || []);
+              sessionStorage.setItem('repeat_order_notice', data.message || 'Items added to cart.');
+              if (data.skipped_items && data.skipped_items.length) {
+                sessionStorage.setItem('repeat_order_warning', 'Some unavailable items were skipped while rebuilding your cart.');
+              } else {
+                sessionStorage.removeItem('repeat_order_warning');
+              }
+              window.location.href = '{% url "cart_page" %}';
             } else {
               alert('Error: ' + (data.message || 'Failed to repeat order'));
             }

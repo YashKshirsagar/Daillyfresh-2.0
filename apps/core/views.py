@@ -629,7 +629,7 @@ def get_user_orders(request):
 
 @login_required(login_url='login')
 def repeat_order(request):
-    """Repeat a previous order"""
+    """Prepare cart items from a previous order for the standard checkout flow."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
     
@@ -637,34 +637,37 @@ def repeat_order(request):
         data = json.loads(request.body)
         order_id = data.get('order_id')
         
-        # Get the original order
         original_order = Order.objects.get(id=order_id, user=request.user)
-        
-        # Create new order with same items
-        new_order = Order.objects.create(
-            user=request.user,
-            shipping_address=original_order.shipping_address,
-            subtotal=original_order.subtotal,
-            delivery_fee=original_order.delivery_fee,
-            coupon=original_order.coupon,
-            discount_amount=original_order.discount_amount,
-            total_amount=original_order.total_amount,
-            status='Pending'
-        )
-        
-        # Copy order items
-        for item in original_order.items.all():
-            OrderItem.objects.create(
-                order=new_order,
-                product=item.product,
-                price=item.price,
-                quantity=item.quantity
-            )
+
+        cart_items = []
+        skipped_items = []
+
+        for item in original_order.items.select_related('product'):
+            product = item.product
+            if not product:
+                skipped_items.append(item.product_id)
+                continue
+
+            cart_items.append({
+                'id': product.id,
+                'name': product.name,
+                'price': str(product.current_price),
+                'image': product.image.url if product.image else '',
+                'unit': product.unit,
+                'quantity': item.quantity,
+            })
+
+        if not cart_items:
+            return JsonResponse({
+                'success': False,
+                'message': 'This order cannot be repeated because its products are no longer available.',
+            }, status=400)
         
         return JsonResponse({
             'success': True,
-            'message': 'Order repeated successfully!',
-            'order_id': new_order.id
+            'message': 'Items added to cart. Please confirm your address and payment method.',
+            'cart_items': cart_items,
+            'skipped_items': skipped_items,
         })
     except Order.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Order not found'}, status=404)

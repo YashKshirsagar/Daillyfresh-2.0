@@ -1205,11 +1205,14 @@ Daillyfresh{% endblock %} {% block content %}
   isProcessing: false,
   showAddressModal: false,
   showPaymentModal: false,
+  showSuccessModal: false,
   selectedAddress: {% if addresses %}'{{ addresses.0.id }}'{% else %}null{% endif %},
   coupon: window.appliedCoupon,
   couponInput: '',
   couponLoading: false,
   couponError: '',
+  successOrderRef: '',
+  successMessage: '',
 
   get deliveryFee() { return $store.cart.subtotal >= 500 ? 0 : 40; },
 
@@ -1249,6 +1252,40 @@ Daillyfresh{% endblock %} {% block content %}
     fetch(window.urls.removeCoupon);
   },
 
+  init() {
+    const repeatNotice = sessionStorage.getItem('repeat_order_notice');
+    const repeatWarning = sessionStorage.getItem('repeat_order_warning');
+    if (repeatNotice) {
+      $store.cart.showNotification(repeatNotice, 'success');
+      sessionStorage.removeItem('repeat_order_notice');
+    }
+    if (repeatWarning) {
+      $store.cart.showNotification(repeatWarning, 'error');
+      sessionStorage.removeItem('repeat_order_warning');
+    }
+  },
+
+  handleOrderSuccess(result, defaultMessage) {
+    $store.cart.clear();
+    this.coupon = null;
+    this.couponInput = '';
+    this.couponError = '';
+    this.successOrderRef = result.order_ref || '';
+    this.successMessage = result.message || defaultMessage;
+    this.showSuccessModal = true;
+  },
+
+  closeSuccessModal(destination) {
+    this.showSuccessModal = false;
+    if (destination === 'orders') {
+      window.location.href = window.urls.myOrders;
+      return;
+    }
+    if (destination === 'home') {
+      window.location.href = window.urls.home;
+    }
+  },
+
   async placeOrder() {
     if (!this.selectedAddress) { alert('Please select a delivery address.'); return; }
     this.showPaymentModal = true;
@@ -1268,7 +1305,7 @@ Daillyfresh{% endblock %} {% block content %}
         })
       });
       const result = await res.json();
-      if (result.success) { $store.cart.clear(); window.location.href = window.urls.myOrders; }
+      if (result.success) { this.handleOrderSuccess(result, 'Your order has been placed successfully!'); }
       else { alert('Error: ' + result.message); }
     } catch { alert('Network error. Please try again.'); }
     finally { this.isProcessing = false; }
@@ -1321,8 +1358,7 @@ Daillyfresh{% endblock %} {% block content %}
           });
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
-            $store.cart.clear();
-            window.location.href = window.urls.myOrders;
+            self.handleOrderSuccess(verifyData, 'Payment successful! Your order has been placed.');
           } else {
             alert('Payment verification failed: ' + verifyData.message);
           }
@@ -1334,6 +1370,7 @@ Daillyfresh{% endblock %} {% block content %}
     } catch { alert('Network error. Please try again.'); this.isProcessing = false; }
   }
 }"
+  x-init="init()"
 >
   <div class="container">
     <div
@@ -2029,6 +2066,52 @@ Daillyfresh{% endblock %} {% block content %}
           </div>
           <button type="submit" class="btn-save">Save Address</button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div
+    x-show="showSuccessModal"
+    style="display: none"
+    class="modal-overlay"
+    x-transition.opacity
+  >
+    <div
+      class="modal-box"
+      style="max-width: 460px; overflow: hidden"
+      @click.stop
+      x-transition:enter="transition ease-out duration-250"
+      x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+      x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+    >
+      <div style="padding: 1.75rem 1.75rem 1.25rem; text-align: center; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)">
+        <div style="font-size: 2.5rem; line-height: 1; margin-bottom: 0.75rem">🎉</div>
+        <h3 style="font-size: 1.65rem; font-weight: 800; color: #0a2f15; margin-bottom: 0.5rem">Order Confirmed</h3>
+        <p style="color: #426153; font-size: 0.98rem; line-height: 1.6" x-text="successMessage || 'Your order has been placed successfully.'"></p>
+      </div>
+      <div style="padding: 1.5rem 1.75rem 1.75rem">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin-bottom: 1rem; color: #1a6b3c; font-weight: 700">
+          <span>Party popper moment</span>
+          <span style="font-size: 1.1rem">🥳</span>
+        </div>
+        <div x-show="successOrderRef" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 0.9rem 1rem; margin-bottom: 1.25rem; text-align: center">
+          <p style="font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 0.35rem">Order Reference</p>
+          <p style="font-size: 1rem; font-weight: 800; color: #0f172a" x-text="successOrderRef"></p>
+        </div>
+        <div style="display: grid; gap: 0.75rem">
+          <button
+            @click="closeSuccessModal('orders')"
+            style="width: 100%; border: none; border-radius: 999px; background: #16a34a; color: #fff; font-weight: 800; padding: 0.95rem 1.2rem; cursor: pointer"
+          >
+            View My Orders
+          </button>
+          <button
+            @click="closeSuccessModal('home')"
+            style="width: 100%; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #0f172a; font-weight: 700; padding: 0.95rem 1.2rem; cursor: pointer"
+          >
+            Continue Shopping
+          </button>
+        </div>
       </div>
     </div>
   </div>
