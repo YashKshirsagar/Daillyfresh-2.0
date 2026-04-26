@@ -909,22 +909,39 @@ def shiprocket_webhook(request):
     except json.JSONDecodeError:
         return JsonResponse({"status": "bad request"}, status=400)
 
-    sr_order_id = str(data.get("sr_order_id", ""))
-    awb = data.get("awb", "")
-    current_status = data.get("current_status", "")
-    courier_name = data.get("courier_name", "")
-
     try:
         from core.shiprocket import shiprocket
-        order = Order.objects.get(shiprocket_order_id=sr_order_id)
+        identifiers = shiprocket.extract_order_reference(data)
+        event = shiprocket.extract_tracking_event(data)
+
+        order = None
+        sr_order_id = identifiers.get('shiprocket_order_id', '')
+        shipment_id = identifiers.get('shipment_id', '')
+        order_ref = identifiers.get('order_ref', '')
+
+        if sr_order_id:
+            order = Order.objects.filter(shiprocket_order_id=sr_order_id).first()
+        if not order and shipment_id:
+            order = Order.objects.filter(shipment_id=shipment_id).first()
+        if not order and order_ref:
+            order = Order.objects.filter(order_ref=order_ref).first()
+        if not order:
+            raise Order.DoesNotExist()
+
         new_status = shiprocket.apply_tracking_update(
             order,
-            current_status=current_status,
-            awb=awb,
-            courier_name=courier_name,
+            current_status=event.get('current_status', ''),
+            awb=event.get('awb', ''),
+            courier_name=event.get('courier_name', ''),
         )
-        logger.info(f"Webhook updated Order #{order.id} → {current_status}")
+        logger.info(
+            "Webhook updated Order #%s → %s (sr_order_id=%s, shipment_id=%s)",
+            order.id,
+            event.get('current_status', ''),
+            sr_order_id,
+            shipment_id,
+        )
     except Order.DoesNotExist:
-        logger.warning(f"Webhook: No order found for sr_order_id={sr_order_id}")
+        logger.warning("Webhook: No order found for payload=%s", data)
 
     return JsonResponse({"status": "ok"})

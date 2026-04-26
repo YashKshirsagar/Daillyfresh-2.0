@@ -17,6 +17,9 @@ STATUS_MAP = {
     "RTO INITIATED": "RTO",
     "RTO DELIVERED": "RTO",
     "CANCELED": "Cancelled",
+    "CANCELLED": "Cancelled",
+    "CANCEL": "Cancelled",
+    "ORDER CANCELLED": "Cancelled",
 }
 
 
@@ -138,6 +141,34 @@ class ShiprocketAPI:
             'current_status': current_status,
             'awb': awb,
             'courier_name': courier_name,
+        }
+
+    def extract_order_reference(self, data):
+        tracking_data = data.get('tracking_data') or {}
+        shipment_track = tracking_data.get('shipment_track') or []
+        latest_track = shipment_track[0] if shipment_track else {}
+
+        return {
+            'shiprocket_order_id': str(
+                data.get('sr_order_id')
+                or tracking_data.get('sr_order_id')
+                or tracking_data.get('order_id')
+                or latest_track.get('sr_order_id')
+                or latest_track.get('order_id')
+                or ''
+            ),
+            'shipment_id': str(
+                data.get('shipment_id')
+                or tracking_data.get('shipment_id')
+                or latest_track.get('shipment_id')
+                or ''
+            ),
+            'order_ref': str(
+                data.get('order_id')
+                or tracking_data.get('channel_order_id')
+                or tracking_data.get('order_id_alias')
+                or ''
+            ),
         }
 
     # ── Order APIs ───────────────────────────────────────────
