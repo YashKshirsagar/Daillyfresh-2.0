@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from core.views import (
-    home, signup_view, login_view, logout_view,
+    health_check, home, signup_view, login_view, logout_view,
     cart_page, add_address, place_order,
     create_razorpay_order, verify_payment,
     apply_affiliate_coupon, remove_coupon, apply_coupon,
@@ -16,6 +16,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('healthz/', health_check, name='health_check'),
     path('', home, name='home'),
     path('home/', home, name='home_redirect'),
 

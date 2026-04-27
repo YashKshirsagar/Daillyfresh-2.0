@@ -17,6 +17,10 @@ from .models import *
 logger = logging.getLogger(__name__)
 
 
+def health_check(request):
+    return JsonResponse({'status': 'ok'})
+
+
 def _resolve_cart_item(item):
     item_id = str(item.get('id', ''))
     quantity = int(item.get('quantity', 0))
