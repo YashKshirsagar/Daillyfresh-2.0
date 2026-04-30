@@ -1,4 +1,4 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db import models as db_models
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -18,8 +18,8 @@ admin.site.register(Product)
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ['product', 'price', 'quantity', 'item_total']
-    fields = ['product', 'quantity', 'price', 'item_total']
+    readonly_fields = ['product', 'combo', 'price', 'quantity', 'item_total']
+    fields = ['product', 'combo', 'quantity', 'price', 'item_total']
 
     def item_total(self, obj):
         return f"₹{obj.get_cost()}"
@@ -35,16 +35,18 @@ class OrderItemInline(admin.TabularInline):
 # ─── Order Admin ───
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['order_ref', 'customer_id_display', 'user', 'status', 'delivery_zone', 'total_amount', 'created_at']
-    list_filter = ['status', 'delivery_zone', 'created_at']
+    list_display = ['order_ref', 'customer_id_display', 'user', 'status', 'shiprocket_sync_status_badge', 'payment_mode', 'delivery_zone', 'total_amount', 'created_at']
+    list_filter = ['status', 'shiprocket_sync_status', 'payment_mode', 'delivery_zone', 'created_at']
     search_fields = ['order_ref', 'id', 'user__username', 'user__email', 'customer__customer_id']
     readonly_fields = [
         'order_ref', 'user', 'customer_link', 'shipping_address',
         'subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount',
+        'shiprocket_sync_status', 'shiprocket_sync_error', 'shiprocket_synced_at',
         'created_at', 'updated_at',
     ]
     list_editable = ['status']
     inlines = [OrderItemInline]
+    actions = ['retry_shiprocket_push', 'refresh_shiprocket_status']
 
     fieldsets = (
         ('Order Reference', {
@@ -57,7 +59,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': ('subtotal', 'delivery_fee', 'coupon', 'discount_amount', 'total_amount'),
         }),
         ('Status & Dates', {
-            'fields': ('status', 'delivery_zone', 'created_at', 'updated_at'),
+            'fields': ('payment_mode', 'status', 'delivery_zone', 'shiprocket_sync_status', 'shiprocket_synced_at', 'shiprocket_sync_error', 'created_at', 'updated_at'),
         }),
     )
 
@@ -74,6 +76,83 @@ class OrderAdmin(admin.ModelAdmin):
             return format_html('<a href="{}">{}</a>', url, obj.customer)
         return '-'
     customer_link.short_description = 'Customer'
+
+    def shiprocket_sync_status_badge(self, obj):
+        color_map = {
+            'success': ('#166534', '#dcfce7'),
+            'failed': ('#991b1b', '#fee2e2'),
+            'pending': ('#92400e', '#fef3c7'),
+            'not_required': ('#334155', '#e2e8f0'),
+        }
+        text_color, bg_color = color_map.get(obj.shiprocket_sync_status, ('#334155', '#e2e8f0'))
+        return format_html(
+            '<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;font-weight:600;color:{};background:{}">{}</span>',
+            text_color,
+            bg_color,
+            obj.get_shiprocket_sync_status_display(),
+        )
+    shiprocket_sync_status_badge.short_description = 'Shiprocket Sync'
+
+    @admin.action(description='Retry Shiprocket push for selected orders')
+    def retry_shiprocket_push(self, request, queryset):
+        from core.shiprocket import shiprocket
+
+        success_count = 0
+        skipped_count = 0
+
+        for order in queryset:
+            if order.delivery_zone != 'shiprocket':
+                skipped_count += 1
+                continue
+            if order.shiprocket_order_id:
+                skipped_count += 1
+                continue
+
+            result = shiprocket.sync_order(order)
+            if result.get('success'):
+                success_count += 1
+
+        if success_count:
+            self.message_user(request, f'Successfully pushed {success_count} order(s) to Shiprocket.', level=messages.SUCCESS)
+        if skipped_count:
+            self.message_user(request, f'Skipped {skipped_count} order(s) that were local or already synced.', level=messages.WARNING)
+
+    @admin.action(description='Refresh Shiprocket tracking status for selected orders')
+    def refresh_shiprocket_status(self, request, queryset):
+        from core.shiprocket import shiprocket
+
+        refreshed_count = 0
+        failed_count = 0
+
+        for order in queryset:
+            if order.delivery_zone != 'shiprocket' or not (order.shipment_id or order.shiprocket_order_id):
+                failed_count += 1
+                continue
+
+            try:
+                if order.shipment_id:
+                    response = shiprocket.track_by_shipment(order.shipment_id)
+                else:
+                    response = shiprocket.track_by_order(order.shiprocket_order_id)
+                event = shiprocket.extract_tracking_event(response)
+                shiprocket.apply_tracking_update(
+                    order,
+                    current_status=event.get('current_status', ''),
+                    awb=event.get('awb', ''),
+                    courier_name=event.get('courier_name', ''),
+                )
+                refreshed_count += 1
+            except Exception as exc:
+                order.shiprocket_sync_status = 'failed'
+                order.shiprocket_sync_error = str(exc)[:2000]
+                order.shiprocket_synced_at = None
+                order.save(update_fields=['shiprocket_sync_status', 'shiprocket_sync_error', 'shiprocket_synced_at'])
+                failed_count += 1
+
+        if refreshed_count:
+            self.message_user(request, f'Refreshed Shiprocket status for {refreshed_count} order(s).', level=messages.SUCCESS)
+        if failed_count:
+            self.message_user(request, f'Could not refresh {failed_count} order(s). Check Shiprocket IDs and sync error details.', level=messages.WARNING)
 
 
 # ─── Order inline (used inside CustomerAdmin) ───

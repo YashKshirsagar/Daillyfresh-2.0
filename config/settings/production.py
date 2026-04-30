@@ -4,6 +4,13 @@ import dj_database_url
 
 DEBUG = False
 
+
+def _env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
 # --------------------------------------------------------------------------
 # Allowed Hosts
 # --------------------------------------------------------------------------
@@ -26,7 +33,7 @@ DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL"),
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=_env_bool("DB_SSL_REQUIRE", default=True),
     )
 }
 
@@ -70,3 +77,5 @@ for _host in (_RENDER_HOST, _RAILWAY_HOST):
 SHIPROCKET_ENABLED = os.getenv("SHIPROCKET_ENABLED", "false").lower() == "true"
 SHIPROCKET_EMAIL = os.getenv("SHIPROCKET_EMAIL", "")
 SHIPROCKET_PASSWORD = os.getenv("SHIPROCKET_PASSWORD", "")
+SHIPROCKET_PICKUP_LOCATION = os.getenv("SHIPROCKET_PICKUP_LOCATION", "Home")
+SHIPROCKET_WEBHOOK_TOKEN = os.getenv("SHIPROCKET_WEBHOOK_TOKEN", "")

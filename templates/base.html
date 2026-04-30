@@ -997,6 +997,10 @@
       document.addEventListener("alpine:init", () => {
         Alpine.store("cart", {
           items: JSON.parse(localStorage.getItem("daillyfresh_cart") || "[]"),
+          replace(items) {
+            this.items = Array.isArray(items) ? items : [];
+            this.save();
+          },
           add(product) {
             const existingItem = this.items.find(
               (item) => item.id === product.id,

@@ -255,6 +255,13 @@ class Order(models.Model):
         ('shiprocket', 'Shiprocket'),
     )
 
+    SHIPROCKET_SYNC_CHOICES = (
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('not_required', 'Not Required'),
+    )
+
     order_ref = models.CharField(
         max_length=15, unique=True, editable=False, db_index=True,
         help_text="Auto-generated unique order reference, e.g. DF-A3F2B1C9",
@@ -279,10 +286,17 @@ class Order(models.Model):
     )
 
     # Shiprocket fields
+    shiprocket_sync_status = models.CharField(max_length=20, choices=SHIPROCKET_SYNC_CHOICES, default='pending')
+    shiprocket_sync_error = models.TextField(blank=True, default='')
+    shiprocket_synced_at = models.DateTimeField(blank=True, null=True)
     shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
     shipment_id = models.CharField(max_length=50, blank=True, null=True)
     awb_code = models.CharField(max_length=50, blank=True, null=True, help_text="Airway Bill number for tracking")
     courier_name = models.CharField(max_length=100, blank=True, null=True)
+
+    # Razorpay fields
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, help_text="Razorpay order ID (rzp_...)")
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Razorpay payment ID after successful payment")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -315,11 +329,13 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True)
+    combo = models.ForeignKey('Combo', on_delete=models.SET_NULL, null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2) 
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f"{self.quantity}x {self.product.name if self.product else 'Deleted Product'} (Order #{self.order.id})"
+        item_name = self.product.name if self.product else self.combo.name if self.combo else 'Deleted Item'
+        return f"{self.quantity}x {item_name} (Order #{self.order.id})"
     
     def get_cost(self):
         return self.price * self.quantity

@@ -17,6 +17,55 @@ from .models import *
 logger = logging.getLogger(__name__)
 
 
+def _resolve_cart_item(item):
+    item_id = str(item.get('id', ''))
+    quantity = int(item.get('quantity', 0))
+    if quantity <= 0:
+        raise ValueError('Invalid quantity.')
+
+    if item_id.startswith('combo-'):
+        combo_id = int(item_id.split('-', 1)[1])
+        combo = Combo.objects.get(id=combo_id)
+        return {
+            'kind': 'combo',
+            'object': combo,
+            'quantity': quantity,
+            'price': combo.current_price,
+        }
+
+    product = Product.objects.get(id=int(item_id))
+    return {
+        'kind': 'product',
+        'object': product,
+        'quantity': quantity,
+        'price': product.current_price,
+    }
+
+
+def _order_item_cart_payload(order_item):
+    combo = order_item.combo
+    product = order_item.product
+    if combo:
+        return {
+            'id': f'combo-{combo.id}',
+            'name': combo.name,
+            'price': str(combo.current_price),
+            'image': combo.image.url if combo.image else '',
+            'unit': combo.unit,
+            'quantity': order_item.quantity,
+        }
+    if product:
+        return {
+            'id': product.id,
+            'name': product.name,
+            'price': str(product.current_price),
+            'image': product.image.url if product.image else '',
+            'unit': product.unit,
+            'quantity': order_item.quantity,
+        }
+    return None
+
+
 # --- Main Home View ---
 def home(request):
     slides = HomeHero.objects.order_by('order')
@@ -228,12 +277,11 @@ def place_order(request):
 
             # Backend pe actual subtotal calculate karo (DB prices se)
             actual_subtotal = Decimal('0.00')
-            order_products = []
+            order_lines = []
             for item in cart_items:
-                product = Product.objects.get(id=item['id'])
-                qty = int(item['quantity'])
-                actual_subtotal += product.current_price * qty
-                order_products.append((product, qty))
+                resolved_item = _resolve_cart_item(item)
+                actual_subtotal += resolved_item['price'] * resolved_item['quantity']
+                order_lines.append(resolved_item)
 
             # Delivery fee
             delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
@@ -272,12 +320,13 @@ def place_order(request):
             )
 
             # Order items
-            for product, qty in order_products:
+            for line in order_lines:
                 OrderItem.objects.create(
                     order=order,
-                    product=product,
-                    price=product.current_price,
-                    quantity=qty,
+                    product=line['object'] if line['kind'] == 'product' else None,
+                    combo=line['object'] if line['kind'] == 'combo' else None,
+                    price=line['price'],
+                    quantity=line['quantity'],
                 )
 
             # Coupon stats update
@@ -295,15 +344,20 @@ def place_order(request):
                 pincode=shipping_address.pincode, is_active=True
             ).exists()
             order.delivery_zone = 'local' if is_local else 'shiprocket'
-            order.save(update_fields=['delivery_zone'])
+            if is_local:
+                order.shiprocket_sync_status = 'not_required'
+                order.shiprocket_sync_error = ''
+                order.shiprocket_synced_at = None
+                order.save(update_fields=['delivery_zone', 'shiprocket_sync_status', 'shiprocket_sync_error', 'shiprocket_synced_at'])
+            else:
+                order.save(update_fields=['delivery_zone'])
 
             # Push order to Shiprocket (only for non-local zones)
             if not is_local and getattr(settings, 'SHIPROCKET_ENABLED', False):
-                try:
-                    from core.shiprocket import shiprocket
-                    shiprocket.create_order(order)
-                except Exception as e:
-                    logger.error(f"Shiprocket push failed for Order #{order.id}: {e}")
+                from core.shiprocket import shiprocket
+                result = shiprocket.sync_order(order)
+                if not result.get('success'):
+                    logger.error(f"Shiprocket push failed for Order #{order.id}: {result.get('message', 'Unknown error')}")
 
             return JsonResponse({
                 'success': True,
@@ -314,12 +368,251 @@ def place_order(request):
 
         except Address.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Selected address not found.'})
-        except Product.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'One or more products not found.'})
+        except (Product.DoesNotExist, Combo.DoesNotExist):
+            return JsonResponse({'success': False, 'message': 'One or more cart items were not found.'})
+        except ValueError as e:
+            return JsonResponse({'success': False, 'message': str(e) or 'Invalid cart item.'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+
+# ---------------------------------------------------------------
+# Razorpay — Create Order (no DB order yet)
+# ---------------------------------------------------------------
+
+@login_required
+def create_razorpay_order(request):
+    """
+    Step 1 of online payment flow.
+    Validates cart server-side, creates a Razorpay order, returns the
+    razorpay_order_id + key_id to the frontend so it can open the modal.
+    No DB Order is created here — only after payment is verified.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+    try:
+        import razorpay
+        data = json.loads(request.body)
+        cart_items = data.get('cart', [])
+        address_id = data.get('address_id')
+        coupon_code = data.get('coupon_code')
+
+        Address.objects.get(id=address_id, user=request.user)  # validate ownership
+
+        # Recalculate totals server-side
+        actual_subtotal = Decimal('0.00')
+        for item in cart_items:
+            resolved_item = _resolve_cart_item(item)
+            actual_subtotal += resolved_item['price'] * resolved_item['quantity']
+
+        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+        discount_amount = Decimal('0.00')
+
+        if coupon_code:
+            try:
+                coupon = Coupon.objects.get(code__iexact=coupon_code)
+                if coupon.is_valid and actual_subtotal >= coupon.min_order_amount:
+                    if coupon.discount_type == 'Percentage':
+                        discount_amount = (actual_subtotal * coupon.discount_value) / Decimal('100.00')
+                    else:
+                        discount_amount = coupon.discount_value
+            except Coupon.DoesNotExist:
+                pass
+
+        total_amount = max(actual_subtotal + delivery_fee - discount_amount, Decimal('0.00'))
+
+        # Razorpay expects amount in paise (1 INR = 100 paise)
+        amount_paise = int(total_amount * 100)
+
+        if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
+            logger.error("create_razorpay_order error: Razorpay credentials are missing")
+            return JsonResponse({
+                'success': False,
+                'message': 'Online payment is temporarily unavailable. Please contact support.'
+            })
+
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+        )
+        rz_order = client.order.create({
+            'amount': amount_paise,
+            'currency': 'INR',
+            'receipt': f'cart-{request.user.id}',
+            'payment_capture': 1,
+        })
+
+        return JsonResponse({
+            'success': True,
+            'razorpay_order_id': rz_order['id'],
+            'amount': amount_paise,
+            'key_id': settings.RAZORPAY_KEY_ID,
+        })
+
+    except Address.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Selected address not found.'})
+    except (Product.DoesNotExist, Combo.DoesNotExist):
+        return JsonResponse({'success': False, 'message': 'One or more cart items were not found.'})
+    except ValueError as e:
+        return JsonResponse({'success': False, 'message': str(e) or 'Invalid cart item.'})
+    except razorpay.errors.BadRequestError as e:
+        key_prefix = settings.RAZORPAY_KEY_ID.split('_', 1)[0] if settings.RAZORPAY_KEY_ID else 'missing'
+        logger.error(
+            "create_razorpay_order Razorpay bad request: %s (key_prefix=%s, key_present=%s, secret_present=%s)",
+            e,
+            key_prefix,
+            bool(settings.RAZORPAY_KEY_ID),
+            bool(settings.RAZORPAY_KEY_SECRET),
+        )
+        return JsonResponse({
+            'success': False,
+            'message': 'Online payment is temporarily unavailable. Please contact support.'
+        })
+    except razorpay.errors.ServerError as e:
+        logger.error("create_razorpay_order Razorpay server error: %s", e)
+        return JsonResponse({
+            'success': False,
+            'message': 'Payment gateway is temporarily unavailable. Please try again.'
+        })
+    except Exception as e:
+        logger.error(f"create_razorpay_order error: {e}")
+        return JsonResponse({'success': False, 'message': 'Could not initiate payment. Please try again.'})
+
+
+# ---------------------------------------------------------------
+# Razorpay — Verify Payment & Create DB Order
+# ---------------------------------------------------------------
+
+@login_required
+def verify_payment(request):
+    """
+    Step 2 of online payment flow.
+    Verifies Razorpay HMAC signature — if valid, creates the DB Order
+    with payment_mode='Prepaid' and pushes to Shiprocket.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Invalid request.'})
+
+    try:
+        import razorpay
+        data = json.loads(request.body)
+
+        razorpay_order_id = data.get('razorpay_order_id', '')
+        razorpay_payment_id = data.get('razorpay_payment_id', '')
+        razorpay_signature = data.get('razorpay_signature', '')
+        cart_items = data.get('cart', [])
+        address_id = data.get('address_id')
+        coupon_code = data.get('coupon_code')
+
+        # 1. Verify HMAC signature
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+        )
+        try:
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': razorpay_order_id,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_signature': razorpay_signature,
+            })
+        except razorpay.errors.SignatureVerificationError:
+            logger.warning(f"Razorpay signature verification failed for {razorpay_order_id}")
+            return JsonResponse({'success': False, 'message': 'Payment verification failed. Contact support.'})
+
+        # 2. Recalculate totals server-side (never trust frontend)
+        shipping_address = Address.objects.get(id=address_id, user=request.user)
+        actual_subtotal = Decimal('0.00')
+        order_lines = []
+        for item in cart_items:
+            resolved_item = _resolve_cart_item(item)
+            actual_subtotal += resolved_item['price'] * resolved_item['quantity']
+            order_lines.append(resolved_item)
+
+        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+        applied_coupon = None
+        discount_amount = Decimal('0.00')
+
+        if coupon_code:
+            try:
+                coupon = Coupon.objects.get(code__iexact=coupon_code)
+                if coupon.is_valid and actual_subtotal >= coupon.min_order_amount:
+                    applied_coupon = coupon
+                    if coupon.discount_type == 'Percentage':
+                        discount_amount = (actual_subtotal * coupon.discount_value) / Decimal('100.00')
+                    else:
+                        discount_amount = coupon.discount_value
+            except Coupon.DoesNotExist:
+                pass
+
+        total_amount = max(actual_subtotal + delivery_fee - discount_amount, Decimal('0.00'))
+
+        # 3. Create DB Order
+        order = Order.objects.create(
+            user=request.user,
+            shipping_address=shipping_address,
+            subtotal=actual_subtotal,
+            delivery_fee=delivery_fee,
+            coupon=applied_coupon,
+            discount_amount=discount_amount,
+            total_amount=total_amount,
+            payment_mode='Prepaid',
+            status='Processing',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+        )
+
+        for line in order_lines:
+            OrderItem.objects.create(
+                order=order,
+                product=line['object'] if line['kind'] == 'product' else None,
+                combo=line['object'] if line['kind'] == 'combo' else None,
+                price=line['price'],
+                quantity=line['quantity'],
+            )
+
+        if applied_coupon:
+            applied_coupon.total_uses += 1
+            if applied_coupon.is_affiliate:
+                applied_coupon.total_revenue_generated += total_amount
+            applied_coupon.save()
+
+        request.session.pop('applied_coupon', None)
+
+        # 4. Determine delivery zone & push to Shiprocket as Prepaid
+        is_local = LocalPincode.objects.filter(
+            pincode=shipping_address.pincode, is_active=True
+        ).exists()
+        order.delivery_zone = 'local' if is_local else 'shiprocket'
+        if is_local:
+            order.shiprocket_sync_status = 'not_required'
+            order.shiprocket_sync_error = ''
+            order.shiprocket_synced_at = None
+            order.save(update_fields=['delivery_zone', 'shiprocket_sync_status', 'shiprocket_sync_error', 'shiprocket_synced_at'])
+        else:
+            order.save(update_fields=['delivery_zone'])
+
+        if not is_local and getattr(settings, 'SHIPROCKET_ENABLED', False):
+            from core.shiprocket import shiprocket
+            result = shiprocket.sync_order(order)
+            if not result.get('success'):
+                logger.error(f"Shiprocket push failed for Order #{order.id}: {result.get('message', 'Unknown error')}")
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Payment successful! Order placed.',
+            'order_ref': order.order_ref,
+        })
+
+    except Address.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Selected address not found.'})
+    except (Product.DoesNotExist, Combo.DoesNotExist):
+        return JsonResponse({'success': False, 'message': 'One or more cart items were not found.'})
+    except ValueError as e:
+        return JsonResponse({'success': False, 'message': str(e) or 'Invalid cart item.'})
+    except Exception as e:
+        logger.error(f"verify_payment error: {e}")
+        return JsonResponse({'success': False, 'message': str(e)})
 
 
 # ---------------------------------------------------------------
@@ -376,7 +669,7 @@ def my_orders(request):
 @login_required(login_url='login')
 def get_user_orders(request):
     """AJAX endpoint to fetch user orders"""
-    orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product')
+    orders = Order.objects.filter(user=request.user).select_related('shipping_address', 'coupon').prefetch_related('items__product', 'items__combo')
 
     # Optional status filter
     status = request.GET.get('status')
@@ -391,10 +684,12 @@ def get_user_orders(request):
         user_order_number = total_user_orders - idx
         items_data = []
         for item in order.items.all():
+            item_name = item.product.name if item.product else item.combo.name if item.combo else 'Deleted Item'
+            item_identifier = item.product.id if item.product else f"combo-{item.combo.id}" if item.combo else None
             items_data.append({
                 'id': item.id,
-                'product_name': item.product.name if item.product else 'Deleted Product',
-                'product_id': item.product.id if item.product else None,
+                'product_name': item_name,
+                'product_id': item_identifier,
                 'quantity': item.quantity,
                 'price': float(item.price),
                 'total': float(item.get_cost()),
@@ -402,8 +697,11 @@ def get_user_orders(request):
         
         orders_data.append({
             'id': order.id,
+            'customer_id': order.customer.customer_id if order.customer else None,
             'user_order_number': user_order_number,
+            'order_ref': order.order_ref,
             'status': order.status,
+            'payment_mode': order.payment_mode,
             'created_at': order.created_at.strftime('%B %d, %Y'),
             'created_at_iso': order.created_at.isoformat(),
             'subtotal': float(order.subtotal),
@@ -425,7 +723,7 @@ def get_user_orders(request):
 
 @login_required(login_url='login')
 def repeat_order(request):
-    """Repeat a previous order"""
+    """Prepare cart items from a previous order for the standard checkout flow."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Invalid request'}, status=400)
     
@@ -433,34 +731,30 @@ def repeat_order(request):
         data = json.loads(request.body)
         order_id = data.get('order_id')
         
-        # Get the original order
         original_order = Order.objects.get(id=order_id, user=request.user)
-        
-        # Create new order with same items
-        new_order = Order.objects.create(
-            user=request.user,
-            shipping_address=original_order.shipping_address,
-            subtotal=original_order.subtotal,
-            delivery_fee=original_order.delivery_fee,
-            coupon=original_order.coupon,
-            discount_amount=original_order.discount_amount,
-            total_amount=original_order.total_amount,
-            status='Pending'
-        )
-        
-        # Copy order items
-        for item in original_order.items.all():
-            OrderItem.objects.create(
-                order=new_order,
-                product=item.product,
-                price=item.price,
-                quantity=item.quantity
-            )
+
+        cart_items = []
+        skipped_items = []
+
+        for item in original_order.items.select_related('product', 'combo'):
+            cart_payload = _order_item_cart_payload(item)
+            if not cart_payload:
+                skipped_items.append(item.id)
+                continue
+
+            cart_items.append(cart_payload)
+
+        if not cart_items:
+            return JsonResponse({
+                'success': False,
+                'message': 'This order cannot be repeated because its products are no longer available.',
+            }, status=400)
         
         return JsonResponse({
             'success': True,
-            'message': 'Order repeated successfully!',
-            'order_id': new_order.id
+            'message': 'Items added to cart. Please confirm your address and payment method.',
+            'cart_items': cart_items,
+            'skipped_items': skipped_items,
         })
     except Order.DoesNotExist:
         return JsonResponse({'success': False, 'message': 'Order not found'}, status=404)
@@ -691,33 +985,39 @@ def shiprocket_webhook(request):
     except json.JSONDecodeError:
         return JsonResponse({"status": "bad request"}, status=400)
 
-    sr_order_id = str(data.get("sr_order_id", ""))
-    awb = data.get("awb", "")
-    current_status = data.get("current_status", "")
-    courier_name = data.get("courier_name", "")
-
-    STATUS_MAP = {
-        "MANIFEST GENERATED": "Processing",
-        "PICKED UP": "Shipped",
-        "SHIPPED": "Shipped",
-        "IN TRANSIT": "In Transit",
-        "OUT FOR DELIVERY": "Out for Delivery",
-        "DELIVERED": "Delivered",
-        "RTO INITIATED": "RTO",
-        "RTO DELIVERED": "RTO",
-        "CANCELED": "Cancelled",
-    }
-
     try:
-        order = Order.objects.get(shiprocket_order_id=sr_order_id)
-        order.awb_code = awb
-        order.courier_name = courier_name
-        new_status = STATUS_MAP.get(current_status)
-        if new_status:
-            order.status = new_status
-        order.save(update_fields=['awb_code', 'courier_name', 'status'])
-        logger.info(f"Webhook updated Order #{order.id} → {current_status}")
+        from core.shiprocket import shiprocket
+        identifiers = shiprocket.extract_order_reference(data)
+        event = shiprocket.extract_tracking_event(data)
+
+        order = None
+        sr_order_id = identifiers.get('shiprocket_order_id', '')
+        shipment_id = identifiers.get('shipment_id', '')
+        order_ref = identifiers.get('order_ref', '')
+
+        if sr_order_id:
+            order = Order.objects.filter(shiprocket_order_id=sr_order_id).first()
+        if not order and shipment_id:
+            order = Order.objects.filter(shipment_id=shipment_id).first()
+        if not order and order_ref:
+            order = Order.objects.filter(order_ref=order_ref).first()
+        if not order:
+            raise Order.DoesNotExist()
+
+        new_status = shiprocket.apply_tracking_update(
+            order,
+            current_status=event.get('current_status', ''),
+            awb=event.get('awb', ''),
+            courier_name=event.get('courier_name', ''),
+        )
+        logger.info(
+            "Webhook updated Order #%s → %s (sr_order_id=%s, shipment_id=%s)",
+            order.id,
+            event.get('current_status', ''),
+            sr_order_id,
+            shipment_id,
+        )
     except Order.DoesNotExist:
-        logger.warning(f"Webhook: No order found for sr_order_id={sr_order_id}")
+        logger.warning("Webhook: No order found for payload=%s", data)
 
     return JsonResponse({"status": "ok"})

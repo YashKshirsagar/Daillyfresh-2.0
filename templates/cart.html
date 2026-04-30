@@ -1192,7 +1192,10 @@ Daillyfresh{% endblock %} {% block content %}
     applyCoupon: "{% url 'apply_coupon' %}",
     removeCoupon: "{% url 'remove_coupon' %}",
     placeOrder: "{% url 'place_order' %}",
+    createRazorpayOrder: "{% url 'create_razorpay_order' %}",
+    verifyPayment: "{% url 'verify_payment' %}",
     home: "{% url 'home' %}",
+    myOrders: "{% url 'my_orders' %}",
   };
 </script>
 
@@ -1201,11 +1204,15 @@ Daillyfresh{% endblock %} {% block content %}
   x-data="{
   isProcessing: false,
   showAddressModal: false,
+  showPaymentModal: false,
+  showSuccessModal: false,
   selectedAddress: {% if addresses %}'{{ addresses.0.id }}'{% else %}null{% endif %},
   coupon: window.appliedCoupon,
   couponInput: '',
   couponLoading: false,
   couponError: '',
+  successOrderRef: '',
+  successMessage: '',
 
   get deliveryFee() { return $store.cart.subtotal >= 500 ? 0 : 40; },
 
@@ -1245,8 +1252,47 @@ Daillyfresh{% endblock %} {% block content %}
     fetch(window.urls.removeCoupon);
   },
 
+  init() {
+    const repeatNotice = sessionStorage.getItem('repeat_order_notice');
+    const repeatWarning = sessionStorage.getItem('repeat_order_warning');
+    if (repeatNotice) {
+      $store.cart.showNotification(repeatNotice, 'success');
+      sessionStorage.removeItem('repeat_order_notice');
+    }
+    if (repeatWarning) {
+      $store.cart.showNotification(repeatWarning, 'error');
+      sessionStorage.removeItem('repeat_order_warning');
+    }
+  },
+
+  handleOrderSuccess(result, defaultMessage) {
+    $store.cart.clear();
+    this.coupon = null;
+    this.couponInput = '';
+    this.couponError = '';
+    this.successOrderRef = result.order_ref || '';
+    this.successMessage = result.message || defaultMessage;
+    this.showSuccessModal = true;
+  },
+
+  closeSuccessModal(destination) {
+    this.showSuccessModal = false;
+    if (destination === 'orders') {
+      window.location.href = window.urls.myOrders;
+      return;
+    }
+    if (destination === 'home') {
+      window.location.href = window.urls.home;
+    }
+  },
+
   async placeOrder() {
     if (!this.selectedAddress) { alert('Please select a delivery address.'); return; }
+    this.showPaymentModal = true;
+  },
+
+  async confirmCOD() {
+    this.showPaymentModal = false;
     this.isProcessing = true;
     try {
       const res = await fetch(window.urls.placeOrder, {
@@ -1255,20 +1301,76 @@ Daillyfresh{% endblock %} {% block content %}
         body: JSON.stringify({
           cart: $store.cart.items,
           address_id: this.selectedAddress,
-          subtotal: $store.cart.subtotal,
-          delivery_fee: this.deliveryFee,
-          discount_amount: this.discountAmount,
-          total: this.total,
           coupon_code: this.coupon ? this.coupon.code : null
         })
       });
       const result = await res.json();
-      if (result.success) { $store.cart.clear(); alert('Order placed successfully!'); window.location.href = window.urls.home; }
+      if (result.success) { this.handleOrderSuccess(result, 'Your order has been placed successfully!'); }
       else { alert('Error: ' + result.message); }
     } catch { alert('Network error. Please try again.'); }
     finally { this.isProcessing = false; }
+  },
+
+  async confirmOnlinePayment() {
+    this.showPaymentModal = false;
+    this.isProcessing = true;
+    try {
+      // Step 1: create Razorpay order server-side
+      const res = await fetch(window.urls.createRazorpayOrder, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({
+          cart: $store.cart.items,
+          address_id: this.selectedAddress,
+          coupon_code: this.coupon ? this.coupon.code : null
+        })
+      });
+      const data = await res.json();
+      if (!data.success) { alert('Error: ' + data.message); this.isProcessing = false; return; }
+
+      // Step 2: open Razorpay modal
+      const self = this;
+      const cartSnapshot = JSON.parse(JSON.stringify($store.cart.items));
+      const addressSnapshot = this.selectedAddress;
+      const couponSnapshot = this.coupon ? this.coupon.code : null;
+
+      const rzp = new Razorpay({
+        key: data.key_id,
+        amount: data.amount,
+        currency: 'INR',
+        name: 'Daillyfresh',
+        description: 'Order Payment',
+        order_id: data.razorpay_order_id,
+        theme: { color: '#1a6b3c' },
+        handler: async function(response) {
+          // Step 3: verify payment & create DB order
+          const verifyRes = await fetch(window.urls.verifyPayment, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              cart: cartSnapshot,
+              address_id: addressSnapshot,
+              coupon_code: couponSnapshot,
+            })
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            self.handleOrderSuccess(verifyData, 'Payment successful! Your order has been placed.');
+          } else {
+            alert('Payment verification failed: ' + verifyData.message);
+          }
+          self.isProcessing = false;
+        },
+        modal: { ondismiss: function() { self.isProcessing = false; } }
+      });
+      rzp.open();
+    } catch { alert('Network error. Please try again.'); this.isProcessing = false; }
   }
 }"
+  x-init="init()"
 >
   <div class="container">
     <div
@@ -1822,6 +1924,71 @@ Daillyfresh{% endblock %} {% block content %}
     </div>
   </div>
 
+  <!-- ── Payment Method Modal ── -->
+  <div
+    x-show="showPaymentModal"
+    style="display: none"
+    class="modal-overlay"
+    x-transition.opacity
+  >
+    <div
+      class="modal-box"
+      style="max-width: 420px"
+      @click.away="showPaymentModal = false"
+      x-transition:enter="transition ease-out duration-250"
+      x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+      x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+    >
+      <div class="modal-head">
+        <h3>Choose Payment Method</h3>
+        <button class="modal-close" @click="showPaymentModal = false">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 1rem; padding: 1.5rem">
+
+        <!-- COD Option -->
+        <button
+          @click="confirmCOD()"
+          style="
+            display: flex; align-items: center; gap: 1rem;
+            border: 2px solid var(--border); border-radius: 1rem;
+            padding: 1rem 1.25rem; background: #fff; cursor: pointer;
+            text-align: left; transition: border-color 0.2s, box-shadow 0.2s;
+          "
+          onmouseover="this.style.borderColor='#1a6b3c'; this.style.boxShadow='0 0 0 3px #dcfce7'"
+          onmouseout="this.style.borderColor='#e8ede9'; this.style.boxShadow='none'"
+        >
+          <span style="font-size: 2rem; line-height: 1">💵</span>
+          <span>
+            <strong style="display: block; color: #0d1f13; font-size: 0.95rem">Cash on Delivery</strong>
+            <small style="color: #6b7280">Pay when your order arrives</small>
+          </span>
+        </button>
+
+        <!-- Online Payment Option -->
+        <button
+          @click="confirmOnlinePayment()"
+          style="
+            display: flex; align-items: center; gap: 1rem;
+            border: 2px solid var(--border); border-radius: 1rem;
+            padding: 1rem 1.25rem; background: #fff; cursor: pointer;
+            text-align: left; transition: border-color 0.2s, box-shadow 0.2s;
+          "
+          onmouseover="this.style.borderColor='#1a6b3c'; this.style.boxShadow='0 0 0 3px #dcfce7'"
+          onmouseout="this.style.borderColor='#e8ede9'; this.style.boxShadow='none'"
+        >
+          <span style="font-size: 2rem; line-height: 1">💳</span>
+          <span>
+            <strong style="display: block; color: #0d1f13; font-size: 0.95rem">Pay Online</strong>
+            <small style="color: #6b7280">UPI, Cards, Net Banking via Razorpay</small>
+          </span>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
   <div
     x-show="showAddressModal"
     style="display: none"
@@ -1902,5 +2069,55 @@ Daillyfresh{% endblock %} {% block content %}
       </div>
     </div>
   </div>
+
+  <div
+    x-show="showSuccessModal"
+    style="display: none"
+    class="modal-overlay"
+    x-transition.opacity
+  >
+    <div
+      class="modal-box"
+      style="max-width: 460px; overflow: hidden"
+      @click.stop
+      x-transition:enter="transition ease-out duration-250"
+      x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+      x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+    >
+      <div style="padding: 1.75rem 1.75rem 1.25rem; text-align: center; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)">
+        <div style="font-size: 2.5rem; line-height: 1; margin-bottom: 0.75rem">🎉</div>
+        <h3 style="font-size: 1.65rem; font-weight: 800; color: #0a2f15; margin-bottom: 0.5rem">Order Confirmed</h3>
+        <p style="color: #426153; font-size: 0.98rem; line-height: 1.6" x-text="successMessage || 'Your order has been placed successfully.'"></p>
+      </div>
+      <div style="padding: 1.5rem 1.75rem 1.75rem">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin-bottom: 1rem; color: #1a6b3c; font-weight: 700">
+          <span>Party popper moment</span>
+          <span style="font-size: 1.1rem">🥳</span>
+        </div>
+        <div x-show="successOrderRef" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 0.9rem 1rem; margin-bottom: 1.25rem; text-align: center">
+          <p style="font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; margin-bottom: 0.35rem">Order Reference</p>
+          <p style="font-size: 1rem; font-weight: 800; color: #0f172a" x-text="successOrderRef"></p>
+        </div>
+        <div style="display: grid; gap: 0.75rem">
+          <button
+            @click="closeSuccessModal('orders')"
+            style="width: 100%; border: none; border-radius: 999px; background: #16a34a; color: #fff; font-weight: 800; padding: 0.95rem 1.2rem; cursor: pointer"
+          >
+            View My Orders
+          </button>
+          <button
+            @click="closeSuccessModal('home')"
+            style="width: 100%; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #0f172a; font-weight: 700; padding: 0.95rem 1.2rem; cursor: pointer"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
+
+<!-- Razorpay SDK — loaded only on cart page, deferred so it doesn't block render -->
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+
 {% endblock %}
