@@ -299,9 +299,21 @@
                             </div>
                         </div>
 
-                        <button @click="$store.cart.add({id: product.id, name: product.name, price: product.current_price.replace('₹', ''), image: product.image, unit: product.unit})" class="w-full bg-[#B2E142] text-[#163321] py-3 rounded-2xl font-extrabold text-[15px] hover:bg-[#9DCA36] transition-colors flex items-center justify-center z-20 relative shadow-sm">
-                            Add to Cart
-                        </button>
+                      <button 
+                          @click="product.badge === 'Out of Stock' ? null : $store.cart.add({id: product.id, name: product.name, price: product.current_price.replace('₹', ''), image: product.image, unit: product.unit})"
+                          :disabled="product.badge === 'Out of Stock'"
+                          :class="product.badge === 'Out of Stock' 
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                              : 'bg-[#B2E142] text-[#163321] hover:bg-[#9DCA36] cursor-pointer'"
+                          class="w-full py-3 rounded-2xl font-extrabold text-[15px] transition-colors flex items-center justify-center z-20 relative shadow-sm"
+                      >
+                          <template x-if="product.badge === 'Out of Stock'">
+                              <span><i class="ri-close-circle-line mr-2"></i>Out of Stock</span>
+                          </template>
+                          <template x-if="product.badge !== 'Out of Stock'">
+                              <span>Add to Cart</span>
+                          </template>
+                      </button>
                     </div>
                 </div>
             </template>
@@ -379,9 +391,21 @@
                             </div>
                         </div>
 
-                        <button @click="$store.cart.add({id: 'combo-' + combo.id, name: combo.name, price: combo.current_price.replace('₹', ''), image: combo.image, unit: combo.unit})" class="w-full bg-[#B2E142] text-[#163321] py-3 rounded-2xl font-extrabold text-[15px] hover:bg-[#9DCA36] transition-colors flex items-center justify-center z-20 relative shadow-sm">
-                            Add to Cart
-                        </button>
+                      <button 
+                          @click="combo.badge === 'Out of Stock' ? null : $store.cart.add({id: 'combo-' + combo.id, name: combo.name, price: combo.current_price.replace('₹', ''), image: combo.image, unit: combo.unit})"
+                          :disabled="combo.badge === 'Out of Stock'"
+                          :class="combo.badge === 'Out of Stock' 
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                              : 'bg-[#B2E142] text-[#163321] hover:bg-[#9DCA36] cursor-pointer'"
+                          class="w-full py-3 rounded-2xl font-extrabold text-[15px] transition-colors flex items-center justify-center z-20 relative shadow-sm"
+                      >
+                          <template x-if="combo.badge === 'Out of Stock'">
+                              <span><i class="ri-close-circle-line mr-2"></i>Out of Stock</span>
+                          </template>
+                          <template x-if="combo.badge !== 'Out of Stock'">
+                              <span>Add to Cart</span>
+                          </template>
+                      </button>
                     </div>
                 </div>
             </template>
@@ -443,12 +467,24 @@
                 <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedCombo.modal_description"></p>
 
                 <div class="flex gap-4">
-                    <button @click="$store.cart.add({id: 'combo-' + selectedCombo.id, name: selectedCombo.name, price: selectedCombo.current_price.replace('₹', ''), image: selectedCombo.image, unit: selectedCombo.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg flex items-center justify-center gap-2">
-                        <i class="ri-shopping-cart-2-fill"></i> Add to Cart
+                    <button 
+                        @click="selectedCombo.badge === 'Out of Stock' ? null : $store.cart.add({id: 'combo-' + selectedCombo.id, name: selectedCombo.name, price: selectedCombo.current_price.replace('₹', ''), image: selectedCombo.image, unit: selectedCombo.unit})"
+                        :disabled="selectedCombo.badge === 'Out of Stock'"
+                        :class="selectedCombo.badge === 'Out of Stock'
+                            ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
+                            : 'bg-[#0a2f15] text-white hover:bg-[#16a34a] hover:shadow-xl cursor-pointer'"
+                        class="flex-1 py-4 rounded-full font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <template x-if="selectedCombo.badge === 'Out of Stock'">
+                            <span><i class="ri-close-circle-line"></i> Out of Stock</span>
+                        </template>
+                        <template x-if="selectedCombo.badge !== 'Out of Stock'">
+                            <span><i class="ri-shopping-cart-2-fill"></i> Add to Cart</span>
+                        </template>
                     </button>
-                    <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
+                    <!-- <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
                         <i class="ri-heart-line text-xl"></i>
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </div>
@@ -514,12 +550,24 @@
                 <p class="text-gray-600 leading-relaxed mb-8" x-text="selectedProduct.modal_description"></p>
 
                 <div class="flex gap-4">
-                    <button @click="$store.cart.add({id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.current_price.replace('₹', ''), image: selectedProduct.image, unit: selectedProduct.unit})" class="flex-1 bg-[#0a2f15] text-white py-4 rounded-full font-bold hover:bg-[#16a34a] transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                        <i class="ri-shopping-cart-2-fill"></i> Add to Cart
+                    <button 
+                        @click="selectedProduct.badge === 'Out of Stock' ? null : $store.cart.add({id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.current_price.replace('₹', ''), image: selectedProduct.image, unit: selectedProduct.unit})"
+                        :disabled="selectedProduct.badge === 'Out of Stock'"
+                        :class="selectedProduct.badge === 'Out of Stock'
+                            ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
+                            : 'bg-[#0a2f15] text-white hover:bg-[#16a34a] hover:shadow-xl cursor-pointer'"
+                        class="flex-1 py-4 rounded-full font-bold transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                        <template x-if="selectedProduct.badge === 'Out of Stock'">
+                            <span><i class="ri-close-circle-line"></i> Out of Stock</span>
+                        </template>
+                        <template x-if="selectedProduct.badge !== 'Out of Stock'">
+                            <span><i class="ri-shopping-cart-2-fill"></i> Add to Cart</span>
+                        </template>
                     </button>
-                    <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
+                    <!-- <button class="w-14 h-14 border-2 border-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:border-[#16a34a] hover:text-[#16a34a] transition-all">
                         <i class="ri-heart-line text-xl"></i>
-                    </button>
+                    </button> -->
                 </div>
             </div>
         </div>
