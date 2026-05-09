@@ -3,10 +3,13 @@ from django.urls import path, include
 from core.views import (
     home, signup_view, login_view, logout_view,
     cart_page, add_address, place_order,
+    create_razorpay_order, verify_payment,
     apply_affiliate_coupon, remove_coupon, apply_coupon,
     terms_and_conditions, refund_policy,
     get_user_profile, update_user_profile, update_address, delete_address,
-    my_orders, get_user_orders, repeat_order
+    my_orders, get_user_orders, repeat_order,
+    submit_feedback,
+    shiprocket_webhook,
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -36,6 +39,8 @@ urlpatterns = [
     path('cart/', cart_page, name='cart_page'),
     path('add-address/', add_address, name='add_address'),
     path('place-order/', place_order, name='place_order'),
+    path('api/razorpay/create-order/', create_razorpay_order, name='create_razorpay_order'),
+    path('api/razorpay/verify-payment/', verify_payment, name='verify_payment'),
     path('apply-coupon/', apply_coupon, name='apply_coupon'),
     path('remove-coupon/', remove_coupon, name='remove_coupon'),
 
@@ -43,8 +48,14 @@ urlpatterns = [
     path('terms-and-conditions/', terms_and_conditions, name='terms_and_conditions'),
     path('refund-policy/', refund_policy, name='refund_policy'),
 
+    # Feedback
+    path('api/feedback/', submit_feedback, name='submit_feedback'),
+
     # Affiliate / Promo URL — freelancer/YouTuber ke liye
     path('ref/<str:code>/', apply_affiliate_coupon, name='apply_affiliate_coupon'),
+
+    # Shiprocket Webhook
+    path('webhook/shipping/', shiprocket_webhook, name='shiprocket_webhook'),
 
     path("__reload__/", include("django_browser_reload.urls")),
 ]

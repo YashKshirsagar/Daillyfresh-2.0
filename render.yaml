@@ -1,0 +1,34 @@
+databases:
+  - name: dailyfresh-db
+    plan: free
+    databaseName: dailyfresh
+    user: dailyfresh_user
+
+services:
+  - type: web
+    name: dailyfresh
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dailyfresh-db
+          property: connectionString
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false  # Optional: comma-separated custom domains
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false  # Optional: comma-separated https:// origins

@@ -20,8 +20,22 @@ else:
 
 
 def _generate_customer_id():
-    """Generate a unique customer ID like DF-A1B2C3."""
-    return f"DF-{uuid.uuid4().hex[:6].upper()}"
+    """Generate a unique sequential 4-digit customer ID starting from 1111."""
+    from django.db.models import IntegerField
+    from django.db.models.functions import Cast
+    last = (
+        Customer.objects
+        .annotate(id_int=Cast('customer_id', IntegerField()))
+        .order_by('-id_int')
+        .values_list('id_int', flat=True)
+        .first()
+    )
+    return str((last or 1110) + 1)
+
+
+def _generate_order_ref():
+    """Generate a short UUID-based order reference, e.g. DF-A3F2B1C9."""
+    return f"DF-{uuid.uuid4().hex[:8].upper()}"
 
 
 class Customer(models.Model):
@@ -42,10 +56,15 @@ class Customer(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.customer_id:
-            self.customer_id = _generate_customer_id()
-            # Ensure uniqueness
-            while Customer.objects.filter(customer_id=self.customer_id).exists():
+            from django.db import IntegrityError
+            for _ in range(5):  # retry up to 5 times on race condition
                 self.customer_id = _generate_customer_id()
+                try:
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    continue
+            raise IntegrityError("Could not generate a unique customer ID after 5 attempts")
         super().save(*args, **kwargs)
 
 
@@ -88,6 +107,11 @@ class Product(models.Model):
     badge = models.CharField(max_length=50, blank=True, null=True, help_text="e.g., 'Best Seller', 'New Arrival'")
     badge_color = models.CharField(max_length=7, blank=True, null=True, help_text="Hex color e.g. #FFC107")
     badge_text_color = models.CharField(max_length=7, blank=True, null=True, help_text="Hex color e.g. #000000")
+    sku = models.CharField(max_length=100, blank=True, default='', help_text="Stock Keeping Unit code for Shiprocket")
+    weight = models.DecimalField(max_digits=6, decimal_places=2, default=0.5, help_text="Weight in KG")
+    length = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package length in cm")
+    breadth = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package breadth in cm")
+    height = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package height in cm")
     # updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
@@ -112,6 +136,11 @@ class Combo(models.Model):
     badge = models.CharField(max_length=50, blank=True, null=True)
     badge_color = models.CharField(max_length=7, blank=True, null=True)
     badge_text_color = models.CharField(max_length=7, blank=True, null=True)
+    sku = models.CharField(max_length=100, blank=True, default='', help_text="Stock Keeping Unit code for Shiprocket")
+    weight = models.DecimalField(max_digits=6, decimal_places=2, default=0.5, help_text="Weight in KG")
+    length = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package length in cm")
+    breadth = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package breadth in cm")
+    height = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package height in cm")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -192,13 +221,57 @@ class Address(models.Model):
         super().save(*args, **kwargs)
 
 
+# --- Local Pincode Model ---
+class LocalPincode(models.Model):
+    """Pincodes served locally — orders for these skip Shiprocket."""
+    pincode = models.CharField(max_length=10, unique=True, db_index=True)
+    label = models.CharField(max_length=100, blank=True, default='', help_text="Optional label, e.g. 'Sector 12, Noida'")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['pincode']
+        verbose_name = 'Local Pincode'
+        verbose_name_plural = 'Local Pincodes'
+
+    def __str__(self):
+        return f"{self.pincode}{' — ' + self.label if self.label else ''}"
+
+
 # --- Order Model ---
 class Order(models.Model):
     STATUS_CHOICES = (
         ('Pending', 'Pending'),
+        ('Processing', 'Processing'),
+        ('Shipped', 'Shipped'),
+        ('In Transit', 'In Transit'),
+        ('Out for Delivery', 'Out for Delivery'),
+        ('Delivered', 'Delivered'),
+        ('Cancelled', 'Cancelled'),
+        ('RTO', 'Returned to Origin'),
         ('Completed', 'Completed'),
     )
 
+    PAYMENT_CHOICES = (
+        ('COD', 'Cash on Delivery'),
+        ('Prepaid', 'Prepaid'),
+    )
+
+    DELIVERY_ZONE_CHOICES = (
+        ('local', 'Local'),
+        ('shiprocket', 'Shiprocket'),
+    )
+
+    SHIPROCKET_SYNC_CHOICES = (
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('not_required', 'Not Required'),
+    )
+
+    order_ref = models.CharField(
+        max_length=15, unique=True, editable=False, db_index=True,
+        help_text="Auto-generated unique order reference, e.g. DF-A3F2B1C9",
+    )
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     shipping_address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True, blank=True)
@@ -210,7 +283,27 @@ class Order(models.Model):
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
+    # Payment & Status
+    payment_mode = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='COD')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    delivery_zone = models.CharField(
+        max_length=20, choices=DELIVERY_ZONE_CHOICES, default='shiprocket',
+        help_text="'Local' orders are handled in-house and not pushed to Shiprocket."
+    )
+
+    # Shiprocket fields
+    shiprocket_sync_status = models.CharField(max_length=20, choices=SHIPROCKET_SYNC_CHOICES, default='pending')
+    shiprocket_sync_error = models.TextField(blank=True, default='')
+    shiprocket_synced_at = models.DateTimeField(blank=True, null=True)
+    shiprocket_order_id = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+    shipment_id = models.CharField(max_length=50, blank=True, null=True)
+    awb_code = models.CharField(max_length=50, blank=True, null=True, help_text="Airway Bill number for tracking")
+    courier_name = models.CharField(max_length=100, blank=True, null=True)
+
+    # Razorpay fields
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, help_text="Razorpay order ID (rzp_...)")
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Razorpay payment ID after successful payment")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -218,12 +311,23 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Order #{self.id} - {self.user.username if self.user else 'Guest'}"
+        return f"{self.order_ref} — {self.user.username if self.user else 'Guest'}"
 
     def save(self, *args, **kwargs):
         # Auto-link order to customer profile
         if self.user and not self.customer:
             self.customer = getattr(self.user, 'customer', None)
+        # Auto-generate order_ref on first save
+        if not self.order_ref:
+            from django.db import IntegrityError
+            for _ in range(5):
+                self.order_ref = _generate_order_ref()
+                try:
+                    super().save(*args, **kwargs)
+                    return
+                except IntegrityError:
+                    continue
+            raise IntegrityError("Could not generate a unique order ref after 5 attempts")
         super().save(*args, **kwargs)
 
 
@@ -231,11 +335,13 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True)
+    combo = models.ForeignKey('Combo', on_delete=models.SET_NULL, null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2) 
     quantity = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f"{self.quantity}x {self.product.name if self.product else 'Deleted Product'} (Order #{self.order.id})"
+        item_name = self.product.name if self.product else self.combo.name if self.combo else 'Deleted Item'
+        return f"{self.quantity}x {item_name} (Order #{self.order.id})"
     
     def get_cost(self):
         return self.price * self.quantity
@@ -276,3 +382,17 @@ class Coupon(models.Model):
             if self.max_uses is None or self.total_uses < self.max_uses:
                 return True
         return False
+
+
+class Feedback(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
+    message = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Feedback'
+        verbose_name_plural = 'Feedbacks'
+
+    def __str__(self):
+        return f"Feedback by {self.user.username} on {self.created_at:%Y-%m-%d %H:%M}"
