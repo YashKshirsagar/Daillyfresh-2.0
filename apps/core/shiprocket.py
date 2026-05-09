@@ -180,8 +180,7 @@ class ShiprocketAPI:
         Returns the API response dict.
         """
         address = order.shipping_address
-        items = order.items.select_related("product", "combo").all()
-
+        items = order.items.select_related("product", "combo").all()  # This can be optimised by wrapping it in list() and reusing the same list for calculating dimensions and building payload
         payload = {
             "order_id": order.order_ref,
             "order_date": order.created_at.strftime("%Y-%m-%d %H:%M"),
@@ -198,7 +197,7 @@ class ShiprocketAPI:
             "shipping_is_billing": True,
             "order_items": [
                 {
-                    "name": item.product.name if item.product else "Product",
+                    # "name": item.product.name if item.product else "Product",
                     "name": item.product.name if item.product else item.combo.name if item.combo else "Item",
                     "sku": (
                         item.product.sku if item.product and item.product.sku
@@ -215,9 +214,18 @@ class ShiprocketAPI:
             ],
             "payment_method": order.payment_mode,
             "sub_total": str(order.total_amount),
-            "length": 10,
-            "breadth": 10,
-            "height": 10,
+            "length": float(sum(
+                (item.product.length if item.product else item.combo.length if item.combo else 10) * item.quantity
+                for item in items
+            )),
+            "breadth": float(max(
+                (item.product.breadth if item.product else item.combo.breadth if item.combo else 10)
+                for item in items
+            )),
+            "height": float(max(
+                (item.product.height if item.product else item.combo.height if item.combo else 10)
+                for item in items
+            )),
             "weight": float(
                 sum(
                     (item.product.weight * item.quantity)

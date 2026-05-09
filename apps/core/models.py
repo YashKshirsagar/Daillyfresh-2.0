@@ -109,6 +109,9 @@ class Product(models.Model):
     badge_text_color = models.CharField(max_length=7, blank=True, null=True, help_text="Hex color e.g. #000000")
     sku = models.CharField(max_length=100, blank=True, default='', help_text="Stock Keeping Unit code for Shiprocket")
     weight = models.DecimalField(max_digits=6, decimal_places=2, default=0.5, help_text="Weight in KG")
+    length = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package length in cm")
+    breadth = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package breadth in cm")
+    height = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package height in cm")
     # updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
@@ -135,6 +138,9 @@ class Combo(models.Model):
     badge_text_color = models.CharField(max_length=7, blank=True, null=True)
     sku = models.CharField(max_length=100, blank=True, default='', help_text="Stock Keeping Unit code for Shiprocket")
     weight = models.DecimalField(max_digits=6, decimal_places=2, default=0.5, help_text="Weight in KG")
+    length = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package length in cm")
+    breadth = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package breadth in cm")
+    height = models.DecimalField(max_digits=6, decimal_places=2, default=10, help_text="Package height in cm")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
