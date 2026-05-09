@@ -284,7 +284,7 @@ def place_order(request):
                 order_lines.append(resolved_item)
 
             # Delivery fee
-            delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+            delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('49.00')
 
             # Coupon validate aur apply
             applied_coupon = None
@@ -408,7 +408,7 @@ def create_razorpay_order(request):
             resolved_item = _resolve_cart_item(item)
             actual_subtotal += resolved_item['price'] * resolved_item['quantity']
 
-        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('49.00')
         discount_amount = Decimal('0.00')
 
         if coupon_code:
@@ -529,7 +529,7 @@ def verify_payment(request):
             actual_subtotal += resolved_item['price'] * resolved_item['quantity']
             order_lines.append(resolved_item)
 
-        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('40.00')
+        delivery_fee = Decimal('0.00') if actual_subtotal >= 500 else Decimal('49.00')
         applied_coupon = None
         discount_amount = Decimal('0.00')
 
@@ -768,12 +768,17 @@ def get_user_profile(request):
     """AJAX endpoint to get user profile data"""
     user = request.user
     addresses = Address.objects.filter(user=user)
+
+    customer_id = None  # ← add this
+    if hasattr(user, 'customer'):  # ← and this
+        customer_id = user.customer.customer_id
     
     profile_data = {
         'username': user.username,
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
+        'customer_id': customer_id,
         'addresses': [
             {
                 'id': addr.id,
