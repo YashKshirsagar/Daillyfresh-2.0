@@ -583,22 +583,18 @@
     </div>
 
     {% if partner_logos %}
-    <div class="relative w-full">
-        <div class="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-[#f3f4f6] to-transparent z-10 pointer-events-none"></div>
-        <div class="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-[#f3f4f6] to-transparent z-10 pointer-events-none"></div>
+    <div class="relative w-full group">
+      <div class="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-[#f3f4f6] to-transparent z-10 pointer-events-none"></div>
+      <div class="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-[#f3f4f6] to-transparent z-10 pointer-events-none"></div>
 
-        <div class="flex items-center gap-16 md:gap-24 animate-marquee whitespace-nowrap min-w-full py-2">
-            
-            {% for logo in partner_logos %}
-                <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo">
-            {% endfor %}
-
-            {% comment %} Duplicate for seamless loop {% endcomment %}
-            {% for logo in partner_logos %}
-                <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo">
-            {% endfor %}
-
-        </div>
+      <div class="flex items-center animate-marquee whitespace-nowrap w-max py-2 [will-change:transform] group-hover:[animation-play-state:paused]">
+        {% for logo in partner_logos %}
+          <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo pr-16 md:pr-24">
+        {% endfor %}
+        {% for logo in partner_logos %}
+          <img src="{{ logo.image.url }}" alt="Partner" class="partner-logo pr-16 md:pr-24">
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
 </section>
@@ -743,7 +739,7 @@
 
   @media (min-width: 1080px) {
     .animate-marquee {
-      animation: marquee 20s linear infinite; /* normal on desktop */
+      animation: marquee 35s linear infinite; /* normal on desktop */
     }
   }
   @keyframes marquee {
